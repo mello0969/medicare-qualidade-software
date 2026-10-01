@@ -13,7 +13,7 @@ A página enviada inicialmente é o material de apoio. O enunciado efetivo está
 | R01 | Distinguir a origem humana, o defeito no artefato e sua manifestação no caso A | Três identificações justificadas | Redigido no lote 1 |
 | R02 | Avaliar verificação e validação no caso C | Resposta para cada perspectiva, com a pergunta de Boehm correspondente | Redigido no lote 1 |
 | R03 | Explicar os princípios de teste envolvidos no caso B | Relação entre os princípios e a conclusão indevida da equipe | Redigido no lote 1 |
-| R04 | Classificar A, B e C no modelo estudado | Matriz: situação, característica do produto, subcaracterística e qualidade em uso | Próximo lote |
+| R04 | Classificar A, B e C no modelo estudado | Matriz: situação, característica do produto, subcaracterística e qualidade em uso | Redigido e revisado no lote 2 |
 | R05 | Preparar a discussão sobre produto e processo | Distinção conceitual aplicada ao caso | Lote 3 |
 | R06 | Elaborar a reflexão de cada estudante | Relação entre criatividade, disciplina de testes e inovação | Lote 3; personalização individual |
 | R07 | Respeitar o formato de entrega | Uma folha/matriz por grupo; reflexão no verso | Consolidação final |

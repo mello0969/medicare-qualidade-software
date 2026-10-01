@@ -4,6 +4,8 @@
 
 Planejamento relativo para aproximadamente quatro semanas, ajustável quando a data oficial for informada. Cada lote corresponde a uma entrega que pode ser lida e revisada separadamente.
 
+**Progresso:** lotes 1 e 2 redigidos e revisados. A matriz foi antecipada nesta rodada; síntese, complementos e consolidação permanecem previstos para as próximas partes.
+
 | Lote | Período sugerido | Conteúdo | Condição para concluir |
 | --- | --- | --- | --- |
 | 1 — Enunciado e fundamentos | Semana 1 | Levantamento dos pedidos, referências, plano e respostas da Etapa 1 | Erro/defeito/falha e verificação/validação distintos; princípios aplicados ao cenário |

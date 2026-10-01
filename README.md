@@ -4,7 +4,7 @@ Resolução por etapas do exercício acadêmico **Análise de Qualidade e Diagn�
 
 Segundo o entendimento informado pelo estudante, este mesmo trabalho contará para quatro matérias, sem outro conteúdo previsto no momento.
 
-**Situação atual:** primeiro lote preparado — análise do enunciado, planejamento e respostas da Etapa 1. A matriz, a síntese e a folha final serão desenvolvidas nos próximos lotes.
+**Situação atual:** partes 1 e 2 preparadas e revisadas — análise do enunciado, planejamento, fundamentos de teste e matriz de qualidade dos três casos. A síntese, os complementos aprovados e a folha final serão desenvolvidos nos próximos lotes.
 
 ## Arquivos disponíveis
 
@@ -12,6 +12,7 @@ Segundo o entendimento informado pelo estudante, este mesmo trabalho contará pa
 - [Plano de entregas e commits](docs/02-plano-de-entregas.md)
 - [Notas conceituais e referências](docs/03-notas-e-referencias.md)
 - [Respostas da Etapa 1 — fundamentos](respostas/01-fundamentos.md)
+- [Respostas da Etapa 2 — matriz de qualidade](respostas/02-matriz-qualidade.md)
 
 ## Entrega acadêmica
 
@@ -21,10 +22,9 @@ Os dados dos casos são informações do exercício. Não representam testes exe
 
 ## Próximas entregas
 
-1. Matriz das situações A, B e C e justificativas das classificações.
-2. Síntese sobre produto e processo, preparação para discussão e apoio à reflexão individual.
-3. Plano de testes com critérios mensuráveis e diagrama causal — complementos já aprovados pelo estudante.
-4. Revisão e organização da folha final de entrega.
+1. Síntese sobre produto e processo, preparação para discussão e apoio à reflexão individual.
+2. Plano de testes com critérios mensuráveis e diagrama causal — complementos já aprovados pelo estudante.
+3. Revisão e organização da folha final de entrega.
 
 O cronograma é uma proposta de organização para cerca de quatro semanas; a data oficial ainda precisa ser informada. Os próximos lotes serão feitos conforme a continuidade da conversa.
 
