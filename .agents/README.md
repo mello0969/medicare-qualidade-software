@@ -14,6 +14,9 @@ Instalação local realizada em 2 de outubro de 2026. Somente skills existentes,
 | gsap-core | [greensock/gsap-skills](https://github.com/greensock/gsap-skills) | `skills/gsap-core` | `aed9cfd3277740755f6bfc1155c7aa645403b760` |
 | gsap-scrolltrigger | [greensock/gsap-skills](https://github.com/greensock/gsap-skills) | `skills/gsap-scrolltrigger` | `aed9cfd3277740755f6bfc1155c7aa645403b760` |
 | gsap-performance | [greensock/gsap-skills](https://github.com/greensock/gsap-skills) | `skills/gsap-performance` | `aed9cfd3277740755f6bfc1155c7aa645403b760` |
+| gsap-react | [greensock/gsap-skills](https://github.com/greensock/gsap-skills) | `skills/gsap-react` | `aed9cfd3277740755f6bfc1155c7aa645403b760` |
+
+**Atualização com a implementação React:** `gsap-react` foi lida e instalada diretamente da mesma revisão oficial das demais skills GSAP. O `skills-lock.json` foi atualizado com o hash calculado pela implementação original do instalador. Nova consulta a `codex app-server skills/list` detectou as nove skills habilitadas em escopo `repo`, sem erros. Os pacotes `gsap` e `@gsap/react` estão no `package.json`; a animação de confirmação respeita movimento reduzido.
 
 O Impeccable local é a versão 4.5.0 da fonte canônica. A instalação pessoal preexistente, fora deste repositório, foi preservada. Ao usar Impeccable neste projeto, carregar o arquivo local `skills/impeccable/SKILL.md` e seus recursos.
 
@@ -44,7 +47,7 @@ O endereço e a porta são exemplos para quando existir servidor local. Nesta in
 
 ## Stack e limites desta etapa
 
-Na inspeção inicial havia apenas material acadêmico Markdown, sem aplicação, `package.json` ou framework. As três skills GSAP independentes de framework preparam o suporte a animações solicitado. `gsap-react` ficou pendente porque React ainda não está presente. O pacote de runtime `gsap` não foi adicionado nesta etapa.
+Na inspeção inicial havia apenas material acadêmico Markdown, sem aplicação, `package.json` ou framework. As três skills GSAP independentes de framework prepararam o suporte a animações solicitado. Naquela instalação, `gsap-react` ficou pendente; foi acrescentada quando a aplicação React começou, conforme o registro acima.
 
 Não foram instaladas `gsap-frameworks`, `gsap-plugins`, `gsap-timeline`, `gsap-utils`, `image-to-code`, `img2threejs`, `motion-design`, `gpt-taste`, nem qualquer outra skill fora da seleção. Não foram configurados hooks automáticos ou desenvolvidas páginas.
 

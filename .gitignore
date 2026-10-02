@@ -1,2 +1,10 @@
 # Playwright CLI output (may contain credentials)
 .playwright-cli/
+node_modules/
+dist/
+test-results/
+playwright-report/
+.impeccable/review/
+.impeccable/cache/
+.impeccable/state/
+*.local
