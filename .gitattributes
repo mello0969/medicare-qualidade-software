@@ -1,0 +1,3 @@
+# Preserve the original bytes of vendored skills for reproducible lock hashes.
+.agents/skills/** -text
+skills-lock.json text eol=lf

@@ -1,4 +1,10 @@
-# MediCare — análise de qualidade de software
+# MediCare — projeto integrado de satisfação hospitalar
+
+**Escopo atualizado em 2 de outubro de 2026:** o arquivo `TRABALHO INTEGRADO.txt` enviado pelo estudante descreve um sistema de pesquisas de satisfação hospitalar. O produto deverá priorizar celular e tablets por setor, formulários curtos em etapas, NPS, avaliações por rostos de 1 a 5, perguntas editáveis por administradores e painel com filtros e exportação para Excel. Convites após o atendimento e solicitação opcional de retorno também fazem parte das necessidades levantadas; as integrações ainda serão definidas.
+
+**Preparação técnica concluída:** oito skills existentes instaladas localmente, com fontes e hashes registrados em [skills-lock.json](skills-lock.json). Detalhes e comandos de QA estão no [registro de instalação](.agents/README.md). A stack ainda não foi definida e a implementação do site não foi iniciada nesta etapa.
+
+## Material acadêmico já produzido
 
 Resolução por etapas do exercício acadêmico **Análise de Qualidade e Diagnóstico do Sistema MediCare**, com base no modelo ISO/IEC 25010:2011 indicado pelo conteúdo da atividade.
 
@@ -28,7 +34,7 @@ Os dados dos casos são informações do exercício. Não representam testes exe
 
 O cronograma é uma proposta de organização para cerca de quatro semanas; a data oficial ainda precisa ser informada. Os próximos lotes serão feitos conforme a continuidade da conversa.
 
-A decisão sobre uma página de apresentação no GitHub Pages ficou para depois de as respostas estarem prontas.
+O planejamento anterior de uma página de apresentação opcional foi ampliado pelo pedido de desenvolvimento do sistema. A escolha de hospedagem será feita depois da definição da stack; GitHub Pages não foi configurado.
 
 ## GitHub
 
