@@ -94,6 +94,7 @@ describe('Integridade dos dados', () => {
   it('rejeita registros incompatíveis sem aceitá-los silenciosamente', () => {
     expect(validResponse({ ...response(9), nps: 11 })).toBe(false);
     expect(validResponse({ ...response(9), createdAt: 'invalid' })).toBe(false);
+    expect(validResponse({ ...response(9), shift: ['par'] })).toBe(false);
     expect(validResponse({ ...response(9), answers: [{ value: 5 }] })).toBe(false);
     expect(validQuestions(DEFAULT_QUESTIONS)).toBe(true);
     expect(validQuestions(DEFAULT_QUESTIONS.map((q) => ({ ...q, text: '' })))).toBe(false);

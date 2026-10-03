@@ -7,13 +7,14 @@ export const SECTORS = [
   { id: 'raio-x', name: 'Raio X', description: 'Exames de imagem' },
 ] as const;
 export type SectorId = (typeof SECTORS)[number]['id'];
+export type QuestionSectorId = SectorId | 'geral';
 export type Shift = 'par' | 'impar' | 'nao-informado';
-export type Question = { id: string; sectorId: SectorId; text: string; version: number };
+export type Question = { id: string; sectorId: QuestionSectorId; text: string; version: number };
 export type Answer = {
   questionId: string;
   questionText: string;
   questionVersion: number;
-  sectorId: SectorId;
+  sectorId: QuestionSectorId;
   value: number;
 };
 export type SurveyResponse = {
@@ -27,8 +28,45 @@ export type SurveyResponse = {
   doctor: string;
 };
 export type Filters = { sectorId: string; shift: string; doctor: string; from: string; to: string };
+export type SurveySettings = {
+  version: number;
+  contactPrompt: string;
+  contactConsent: string;
+  confirmationText: string;
+  successText: string;
+  ombudsmanEmail: string;
+};
+export const DEFAULT_SETTINGS: SurveySettings = {
+  version: 1,
+  contactPrompt:
+    'Sentimos que sua experiência poderia ter sido melhor. Você gostaria de registrar um pedido de contato com a ouvidoria?',
+  contactConsent: 'Autorizo o uso dos dados informados para contato sobre esta manifestação.',
+  confirmationText:
+    'Confirme o envio das suas avaliações. Se você pediu contato, os dados autorizados também serão registrados.',
+  successText: 'Sua avaliação foi registrada. Obrigado por ajudar a melhorar o atendimento.',
+  ombudsmanEmail: 'sac@fhdod.com.br',
+};
+export type ContactInput = {
+  name: string;
+  phone: string;
+  email: string;
+  message: string;
+  consent: true;
+  settingsVersion: number;
+};
+export type SurveySubmission = SurveyResponse & { contactRequest?: ContactInput };
+export type ContactStatus = 'novo' | 'em-analise' | 'concluido';
+export type ContactRequest = Omit<ContactInput, 'consent'> & {
+  id: string;
+  surveyId: string;
+  createdAt: string;
+  sectorIds: SectorId[];
+  consentText: string;
+  status: ContactStatus;
+};
 export const EMPTY_FILTERS: Filters = { sectorId: '', shift: '', doctor: '', from: '', to: '' };
-export const sectorName = (id: string) => SECTORS.find((s) => s.id === id)?.name ?? id;
+export const sectorName = (id: string) =>
+  id === 'geral' ? 'Perguntas gerais do hospital' : (SECTORS.find((s) => s.id === id)?.name ?? id);
 export const isSector = (id: unknown): id is SectorId => SECTORS.some((s) => s.id === id);
 
 export const DEFAULT_QUESTIONS: Question[] = SECTORS.flatMap((s) => [
@@ -47,6 +85,25 @@ export const DEFAULT_QUESTIONS: Question[] = SECTORS.flatMap((s) => [
 ]);
 DEFAULT_QUESTIONS.find((q) => q.id === 'raio-x-atendimento')!.text =
   'Como foi o atendimento no Raio X?';
+DEFAULT_QUESTIONS.push(
+  {
+    id: 'geral-informacoes',
+    sectorId: 'geral',
+    text: 'As informações sobre seu atendimento foram claras?',
+    version: 1,
+  },
+  {
+    id: 'geral-organizacao',
+    sectorId: 'geral',
+    text: 'Como você avalia a organização do atendimento no hospital?',
+    version: 1,
+  },
+);
+
+export const questionsForSectors = (questions: Question[], selected: SectorId[]) => [
+  ...questions.filter((q) => q.sectorId !== 'geral' && selected.includes(q.sectorId)),
+  ...questions.filter((q) => q.sectorId === 'geral'),
+];
 
 export function calculateMetrics(responses: SurveyResponse[]) {
   const scores = responses
@@ -128,7 +185,9 @@ export function createDemoResponses(now = new Date()): SurveyResponse[] {
       id: `exemplo-${i}`,
       createdAt: date.toISOString(),
       sectorIds,
-      answers: DEFAULT_QUESTIONS.filter((q) => sectorIds.includes(q.sectorId)).map((q, j) => ({
+      answers: DEFAULT_QUESTIONS.filter(
+        (q) => q.sectorId === 'geral' || sectorIds.includes(q.sectorId),
+      ).map((q, j) => ({
         questionId: q.id,
         questionText: q.text,
         questionVersion: q.version,

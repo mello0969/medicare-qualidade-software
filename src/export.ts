@@ -3,11 +3,11 @@ import { calculateMetrics, sectorName, type Filters, type SurveyResponse } from 
 export async function createWorkbook(responses: SurveyResponse[], mode: string, filters: Filters) {
   const { Workbook } = await import('exceljs');
   const book = new Workbook();
-  book.creator = 'MediCare — projeto acadêmico';
+  book.creator = 'FHDOD — projeto acadêmico';
   const info = book.addWorksheet('Resumo');
   const metrics = calculateMetrics(responses);
   info.addRows([
-    ['MediCare — pesquisa de satisfação'],
+    ['FHDOD — pesquisa de satisfação (projeto acadêmico)'],
     ['Origem dos dados', mode],
     ['Exportado em', new Date().toLocaleString('pt-BR')],
     ['Setor', filters.sectorId ? sectorName(filters.sectorId) : 'Todos'],
@@ -23,7 +23,7 @@ export async function createWorkbook(responses: SurveyResponse[], mode: string, 
       metrics.satisfaction === null ? 'Sem notas' : `${metrics.satisfaction}%`,
     ],
     ['Método NPS', '100 × (promotores − detratores) / respostas válidas de NPS'],
-    ['Limite', 'Protótipo acadêmico; sem autenticação e sem integração hospitalar.'],
+    ['Limite', 'Protótipo acadêmico; sem integração com os sistemas da FHDOD.'],
   ]);
   const sheet = book.addWorksheet('Respostas');
   sheet.addRow(['ID', 'Data ISO', 'Setores', 'NPS', 'Plantão', 'Profissional', 'Comentário']);

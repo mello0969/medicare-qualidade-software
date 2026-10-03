@@ -8,3 +8,11 @@ playwright-report/
 .impeccable/cache/
 .impeccable/state/
 *.local
+data/
+.local/
+.env
+.env.*
+!.env.example
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal

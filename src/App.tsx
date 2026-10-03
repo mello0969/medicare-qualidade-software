@@ -32,15 +32,25 @@ import {
   type Filters,
   type Question,
   type SurveyResponse,
+  type QuestionSectorId,
 } from './domain';
 import { loadQuestions, loadResponses, saveQuestions } from './storage';
 import { exportExcel } from './export';
+import Login, { AuthProvider, useAuth } from './Auth';
+import { ApiError, getQuestions, getResponses, updateQuestions, createQuestion } from './api';
+import UsersPage from './Users';
+import Brand from './Brand';
+import PasswordChange from './PasswordChange';
+import { OmbudsmanPage, SettingsPage } from './Administration';
 
 const nav = [
   { path: '/', label: 'Visão geral', icon: SquaresFour },
   { path: '/pesquisas', label: 'Pesquisas por setor', icon: ClipboardText },
   { path: '/perguntas', label: 'Editar perguntas', icon: SlidersHorizontal },
   { path: '/qualidade', label: 'Qualidade do software', icon: ShieldCheck },
+  { path: '/usuarios', label: 'Acessos da equipe', icon: Users },
+  { path: '/ouvidoria', label: 'Ouvidoria', icon: ChatCircleText },
+  { path: '/configuracoes', label: 'Mensagens da pesquisa', icon: SlidersHorizontal },
 ];
 function useRoute() {
   const [route, setRoute] = useState(location.hash.slice(1) || '/');
@@ -76,21 +86,60 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean
 export default function App() {
   return (
     <ErrorBoundary>
-      <Application />
+      <AuthProvider>
+        <Application />
+      </AuthProvider>
     </ErrorBoundary>
   );
 }
 function Application() {
+  const { user, loading: authLoading, signOut } = useAuth();
   const route = useRoute();
   const path = route.split('?')[0];
+  const params = new URLSearchParams(route.split('?')[1]);
+  const localMode = params.get('modo') === 'local';
   const [menu, setMenu] = useState(false);
+  const [logoutError, setLogoutError] = useState('');
+  const [loggingOut, setLoggingOut] = useState(false);
+  async function leave() {
+    setLoggingOut(true);
+    setLogoutError('');
+    try {
+      await signOut();
+      location.hash = '/';
+    } catch (err) {
+      setLogoutError((err as Error).message);
+    } finally {
+      setLoggingOut(false);
+    }
+  }
   useEffect(() => {
     setMenu(false);
     window.scrollTo(0, 0);
-    document.title = `MediCare · ${path.startsWith('/pesquisa/') || path === '/pesquisa' ? 'Sua experiência' : (nav.find((n) => n.path === path)?.label ?? 'Visão geral')}`;
-  }, [path]);
+    document.title = `FHDOD · ${user?.mustChangePassword ? 'Defina sua senha' : path.startsWith('/pesquisa/') || path === '/pesquisa' ? 'Sua experiência' : !user && (path === '/' || path === '/login') ? 'Acesso à gestão' : (nav.find((n) => n.path === path)?.label ?? 'Visão geral')}`;
+  }, [path, user?.id, user?.mustChangePassword]);
+  if (user?.mustChangePassword) return <PasswordChange />;
   if (path === '/pesquisa' || path.startsWith('/pesquisa/'))
-    return <Survey key={path} sector={path.split('/')[2]} />;
+    return (
+      <Survey key={`${path}-${localMode}`} sector={path.split('/')[2]} localMode={localMode} />
+    );
+  if (
+    path === '/login' ||
+    (!user &&
+      !localMode &&
+      ['/', '/painel', '/perguntas', '/usuarios', '/ouvidoria', '/configuracoes'].includes(path))
+  )
+    return (
+      <main className="access-page">
+        <Login />
+        <footer className="access-footer">
+          <p>Protótipo acadêmico · use dados fictícios. Sem integração com os sistemas da FHDOD.</p>
+          <a href="https://www.fhdod.com.br/" target="_blank" rel="noreferrer">
+            Site oficial da Fundação Hospitalar Dr. Oswaldo Diesel
+          </a>
+        </footer>
+      </main>
+    );
   const current = nav.find((n) => n.path === path);
   return (
     <div className="app-shell">
@@ -105,23 +154,31 @@ function Application() {
         Pular para o conteúdo
       </a>
       <aside className={`sidebar ${menu ? 'is-open' : ''}`}>
-        <a className="brand light" href="#/">
-          <span className="brand-mark">M</span>MediCare<span className="brand-dot">.</span>
-        </a>
+        <Brand className="light" />
         <p className="sidebar-subtitle">Escuta e cuidado</p>
         <nav aria-label="Navegação principal">
-          {nav.map((n) => (
-            <a
-              key={n.path}
-              href={`#${n.path}`}
-              aria-current={
-                path === n.path || (n.path === '/' && path === '/painel') ? 'page' : undefined
-              }
-            >
-              <n.icon size={21} weight={path === n.path ? 'fill' : 'regular'} aria-hidden="true" />
-              <span>{n.label}</span>
-            </a>
-          ))}
+          {nav
+            .filter(
+              (n) =>
+                !['/usuarios', '/ouvidoria', '/configuracoes'].includes(n.path) ||
+                user?.role === 'manager',
+            )
+            .map((n) => (
+              <a
+                key={n.path}
+                href={`#${n.path}`}
+                aria-current={
+                  path === n.path || (n.path === '/' && path === '/painel') ? 'page' : undefined
+                }
+              >
+                <n.icon
+                  size={21}
+                  weight={path === n.path ? 'fill' : 'regular'}
+                  aria-hidden="true"
+                />
+                <span>{n.label}</span>
+              </a>
+            ))}
         </nav>
         <div className="sidebar-bottom">
           <div className="sidebar-note">
@@ -129,9 +186,16 @@ function Application() {
             <p>Cada resposta é uma oportunidade de cuidar melhor.</p>
           </div>
           <div className="workspace-label">
-            <span className="workspace-avatar">MC</span>
+            <span className="workspace-avatar">FH</span>
             <span>
-              Projeto integrado<small>Ambiente acadêmico</small>
+              {user?.name ?? 'Projeto integrado'}
+              <small>
+                {user
+                  ? user.role === 'manager'
+                    ? 'Administrador · acesso total'
+                    : sectorName(user.sectorId ?? '')
+                  : 'Ambiente acadêmico'}
+              </small>
             </span>
           </div>
         </div>
@@ -149,19 +213,49 @@ function Application() {
             </button>
             <span>Espaço de gestão</span>
             <CaretRight size={14} aria-hidden="true" />
-            <strong>{current?.label ?? 'Visão geral'}</strong>
+            <strong>
+              {current?.label ?? (path === '/login' ? 'Acesso à gestão' : 'Visão geral')}
+            </strong>
           </div>
-          <span className="prototype-badge">Protótipo acadêmico</span>
+          <div className="topbar-access">
+            <span className="prototype-badge">Protótipo acadêmico</span>
+            {authLoading ? (
+              <span className="small muted">Verificando acesso…</span>
+            ) : user ? (
+              <button className="text-button" onClick={leave} disabled={loggingOut}>
+                {loggingOut ? 'Saindo…' : 'Sair'}
+              </button>
+            ) : (
+              <a className="button secondary" href="#/login">
+                Entrar
+              </a>
+            )}
+          </div>
         </header>
         <main id="conteudo" tabIndex={-1} className="main-content">
-          {path === '/' || path === '/painel' ? (
-            <Dashboard forceLocal={route.includes('dados=locais')} />
+          {logoutError && (
+            <p className="error-message" role="alert">
+              {logoutError}
+            </p>
+          )}
+          {path === '/' || path === '/painel' || path === '/demonstracao' ? (
+            <Dashboard
+              requestedMode={path === '/demonstracao' ? 'exemplo' : (params.get('dados') ?? '')}
+            />
           ) : path === '/pesquisas' ? (
             <SurveyLinks />
           ) : path === '/perguntas' ? (
-            <QuestionEditor />
+            <QuestionEditor localMode={localMode} />
           ) : path === '/qualidade' ? (
             <Quality />
+          ) : path === '/login' ? (
+            <Login />
+          ) : path === '/usuarios' ? (
+            <UsersPage />
+          ) : path === '/ouvidoria' ? (
+            <OmbudsmanPage />
+          ) : path === '/configuracoes' ? (
+            <SettingsPage />
           ) : (
             <div className="empty-state">
               <h1>Página não encontrada</h1>
@@ -172,25 +266,85 @@ function Application() {
           )}
         </main>
         <footer className="app-footer">
-          <span>MediCare · Projeto integrado de qualidade de software</span>
-          <span>Versão 0.1 · Desenvolvimento por etapas</span>
+          <span>FHDOD · Três Coroas/RS · Projeto acadêmico</span>
+          <span>Versão 0.3 · Desenvolvimento por etapas</span>
         </footer>
       </div>
     </div>
   );
 }
 
-function Dashboard({ forceLocal }: { forceLocal: boolean }) {
-  const [mode, setMode] = useState<'demo' | 'local'>(forceLocal ? 'local' : 'demo');
+function Dashboard({ requestedMode }: { requestedMode: string }) {
+  const { user, refresh: refreshAuth } = useAuth();
+  const [mode, setMode] = useState<'demo' | 'local' | 'server'>(
+    requestedMode === 'exemplo'
+      ? 'demo'
+      : requestedMode === 'locais'
+        ? 'local'
+        : requestedMode === 'servidor'
+          ? 'server'
+          : user
+            ? 'server'
+            : 'demo',
+  );
   const [responses, setResponses] = useState<SurveyResponse[]>([]);
+  const [serverResponses, setServerResponses] = useState<SurveyResponse[]>([]);
+  const [serverError, setServerError] = useState('');
+  const [fetching, setFetching] = useState(false);
+  const [updatedAt, setUpdatedAt] = useState<string | null>(null);
+  const [reload, setReload] = useState(0);
   const [error, setError] = useState('');
   const [filters, setFilters] = useState<Filters>({ ...EMPTY_FILTERS });
   const [exporting, setExporting] = useState(false);
   const [notice, setNotice] = useState('');
   const demo = useMemo(() => createDemoResponses(), []);
   useEffect(() => {
-    if (forceLocal) setMode('local');
-  }, [forceLocal]);
+    if (requestedMode === 'locais') setMode('local');
+    if (requestedMode === 'servidor') setMode('server');
+    if (requestedMode === 'exemplo') setMode('demo');
+  }, [requestedMode]);
+  useEffect(() => {
+    setServerResponses([]);
+    setServerError('');
+    setUpdatedAt(null);
+    if (mode !== 'server' || !user) {
+      setFetching(false);
+      return;
+    }
+    let active = true;
+    let pending = false;
+    const fetchData = async () => {
+      if (pending || document.visibilityState === 'hidden') return;
+      pending = true;
+      setFetching(true);
+      try {
+        const data = await getResponses();
+        if (active) {
+          setServerResponses(data);
+          setServerError('');
+          setUpdatedAt(new Date().toLocaleTimeString('pt-BR'));
+        }
+      } catch (err) {
+        if (active) {
+          setServerError((err as Error).message);
+          if (err instanceof ApiError && err.status === 401) await refreshAuth();
+        }
+      } finally {
+        pending = false;
+        if (active) setFetching(false);
+      }
+    };
+    void fetchData();
+    const timer = setInterval(fetchData, 15000);
+    window.addEventListener('focus', fetchData);
+    document.addEventListener('visibilitychange', fetchData);
+    return () => {
+      active = false;
+      clearInterval(timer);
+      window.removeEventListener('focus', fetchData);
+      document.removeEventListener('visibilitychange', fetchData);
+    };
+  }, [mode, user?.id, reload, refreshAuth]);
   useEffect(() => {
     const refresh = () => {
       try {
@@ -208,7 +362,8 @@ function Dashboard({ forceLocal }: { forceLocal: boolean }) {
       window.removeEventListener('medicare-storage', refresh);
     };
   }, []);
-  const source = mode === 'demo' ? demo : responses;
+  const source =
+    mode === 'demo' ? demo : mode === 'server' ? (user ? serverResponses : []) : responses;
   const invalidRange = !!(filters.from && filters.to && filters.from > filters.to);
   const filtered = useMemo(
     () => (invalidRange ? [] : filterResponses(source, filters)),
@@ -216,7 +371,9 @@ function Dashboard({ forceLocal }: { forceLocal: boolean }) {
   );
   const metrics = calculateMetrics(filtered);
   const sectors = sectorSummary(filtered).filter(
-    (s) => !filters.sectorId || s.id === filters.sectorId,
+    (s) =>
+      (!filters.sectorId || s.id === filters.sectorId) &&
+      (mode !== 'server' || user?.role !== 'sector-admin' || s.id === user.sectorId),
   );
   const doctors = [...new Set(source.map((r) => r.doctor).filter(Boolean))].sort();
   const updateFilter = (key: keyof Filters, value: string) =>
@@ -229,7 +386,9 @@ function Dashboard({ forceLocal }: { forceLocal: boolean }) {
         filtered,
         mode === 'demo'
           ? 'Dados sintéticos de demonstração'
-          : 'Respostas armazenadas neste navegador',
+          : mode === 'server'
+            ? `Respostas no servidor · ${user?.role === 'sector-admin' ? sectorName(user.sectorId ?? '') : 'todos os setores'}`
+            : 'Respostas armazenadas neste navegador',
         filters,
       );
       setNotice('Planilha Excel gerada com os filtros selecionados.');
@@ -249,7 +408,13 @@ function Dashboard({ forceLocal }: { forceLocal: boolean }) {
         <button
           className="button secondary"
           onClick={download}
-          disabled={exporting || !filtered.length || invalidRange || (mode === 'local' && !!error)}
+          disabled={
+            exporting ||
+            !filtered.length ||
+            invalidRange ||
+            (mode === 'local' && !!error) ||
+            (mode === 'server' && (!user || fetching || !!serverError))
+          }
         >
           <DownloadSimple size={19} aria-hidden="true" />
           {exporting ? 'Gerando Excel…' : 'Exportar Excel'}
@@ -264,10 +429,17 @@ function Dashboard({ forceLocal }: { forceLocal: boolean }) {
                 <strong>Você está explorando dados de exemplo.</strong> Nenhum indicador representa
                 um hospital real.
               </>
+            ) : mode === 'server' ? (
+              <>
+                <strong>Respostas no servidor.</strong>{' '}
+                {user?.role === 'sector-admin'
+                  ? `Acesso restrito a ${sectorName(user.sectorId ?? '')}. Comentários gerais não são exibidos neste perfil.`
+                  : 'Acompanhamento compartilhado, com acesso administrativo.'}
+              </>
             ) : (
               <>
-                <strong>Respostas deste navegador.</strong> Ainda não há sincronização entre
-                dispositivos ou controle de acesso.
+                <strong>Respostas locais da demonstração.</strong> Registros da primeira versão,
+                disponíveis apenas neste navegador.
               </>
             )}
           </p>
@@ -279,15 +451,50 @@ function Dashboard({ forceLocal }: { forceLocal: boolean }) {
           id="data-mode"
           value={mode}
           onChange={(e) => {
-            setMode(e.target.value as 'demo' | 'local');
+            setMode(e.target.value as 'demo' | 'local' | 'server');
             setFilters({ ...EMPTY_FILTERS });
             setNotice('');
           }}
         >
           <option value="demo">Dados de exemplo</option>
           <option value="local">Respostas deste navegador</option>
+          <option value="server">Respostas no servidor</option>
         </select>
       </div>
+      {mode === 'server' && !user && (
+        <div className="notice">
+          <ShieldCheck size={22} aria-hidden="true" />
+          <div>
+            <p>Entre com seu acesso administrativo para consultar as respostas.</p>
+            <a className="text-link" href="#/login">
+              Entrar na gestão
+            </a>
+          </div>
+        </div>
+      )}
+      {mode === 'server' && user && (
+        <div className="sync-status" role="status">
+          <span>
+            {fetching
+              ? 'Atualizando respostas…'
+              : updatedAt
+                ? `Atualizado às ${updatedAt} · atualização automática a cada 15 segundos`
+                : 'Aguardando dados do servidor'}
+          </span>
+          <button
+            className="text-button"
+            onClick={() => setReload((n) => n + 1)}
+            disabled={fetching}
+          >
+            Atualizar agora
+          </button>
+        </div>
+      )}
+      {mode === 'server' && serverError && (
+        <p className="error-message" role="alert">
+          {serverError} Use “Atualizar agora” para tentar novamente.
+        </p>
+      )}
       {error && (
         <p className="error-message" role="alert">
           {error}
@@ -306,7 +513,9 @@ function Dashboard({ forceLocal }: { forceLocal: boolean }) {
             onChange={(e) => updateFilter('sectorId', e.target.value)}
           >
             <option value="">Todos os setores</option>
-            {SECTORS.map((s) => (
+            {SECTORS.filter(
+              (s) => mode !== 'server' || user?.role !== 'sector-admin' || s.id === user.sectorId,
+            ).map((s) => (
               <option value={s.id} key={s.id}>
                 {s.name}
               </option>
@@ -378,7 +587,33 @@ function Dashboard({ forceLocal }: { forceLocal: boolean }) {
           icon={<FirstAid size={23} />}
         />
       </section>
-      {!filtered.length ? (
+      <div className="quality-follow-up">
+        <p>
+          <strong>
+            {
+              filtered.filter((response) => response.answers.some((answer) => answer.value <= 2))
+                .length
+            }
+          </strong>{' '}
+          pesquisas com alguma nota 1 ou 2 no recorte atual.
+        </p>
+        {mode === 'server' && user?.role === 'manager' && (
+          <a className="text-link" href="#/ouvidoria">
+            Ver pedidos autorizados de contato
+          </a>
+        )}
+      </div>
+      {mode === 'server' && !user ? null : fetching && !updatedAt ? (
+        <div className="empty-state" role="status">
+          <h2>Buscando as respostas</h2>
+          <p>O painel será atualizado assim que os dados chegarem.</p>
+        </div>
+      ) : mode === 'server' && serverError && !updatedAt ? (
+        <div className="empty-state">
+          <h2>Não foi possível carregar as respostas</h2>
+          <p>Confira sua conexão e use “Atualizar agora” para tentar novamente.</p>
+        </div>
+      ) : !filtered.length ? (
         <div className="empty-state">
           <ClipboardText size={40} aria-hidden="true" />
           <h2>
@@ -515,7 +750,11 @@ function Dashboard({ forceLocal }: { forceLocal: boolean }) {
                   </article>
                 ))}
               {!filtered.some((r) => r.comment) && (
-                <p className="muted">As respostas deste recorte ainda não têm comentários.</p>
+                <p className="muted">
+                  {mode === 'server' && user?.role === 'sector-admin'
+                    ? 'Comentários gerais são consultados pela gestão.'
+                    : 'As respostas deste recorte ainda não têm comentários.'}
+                </p>
               )}
               <p className="comment-caption">
                 Até 3 comentários recentes ·{' '}
@@ -649,8 +888,8 @@ function SurveyLinks() {
       <div className="notice">
         <Info size={22} aria-hidden="true" />
         <p>
-          Os links abaixo abrem a pesquisa nesta instalação. Nesta versão, respostas de outros
-          dispositivos ainda não chegam ao seu painel.
+          As pesquisas abaixo enviam respostas ao mesmo servidor. Para usar em celulares e tablets,
+          o site precisa estar acessível na rede ou em uma hospedagem.
         </p>
       </div>
       {status && (
@@ -664,7 +903,7 @@ function SurveyLinks() {
             <span className="sector-number">{String(i + 1).padStart(2, '0')}</span>
             <div className="sector-link-info">
               <h2>{s.name}</h2>
-              <p>{s.description} · 2 perguntas e recomendação</p>
+              <p>{s.description} · perguntas específicas, gerais e NPS</p>
               <label className="sr-only" htmlFor={`url-${s.id}`}>
                 URL de {s.name}
               </label>
@@ -699,21 +938,42 @@ function SurveyLinks() {
   );
 }
 
-function QuestionEditor() {
-  const [sector, setSector] = useState<string>('recepcao');
+function QuestionEditor({ localMode }: { localMode: boolean }) {
+  const { user, csrfToken, loading: authLoading, refresh: refreshAuth } = useAuth();
+  const [sector, setSector] = useState<string>(user?.sectorId ?? 'recepcao');
   const [questions, setQuestions] = useState<Question[]>([]);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [error, setError] = useState('');
   const [status, setStatus] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [reload, setReload] = useState(0);
+  const [newText, setNewText] = useState('');
   useEffect(() => {
-    try {
-      const q = loadQuestions();
-      setQuestions(q);
-      setDrafts(Object.fromEntries(q.map((x) => [x.id, x.text])));
-    } catch (err) {
-      setError((err as Error).message);
-    }
-  }, []);
+    let active = true;
+    setQuestions([]);
+    setDrafts({});
+    setError('');
+    if (!localMode && !user) return;
+    if (user?.sectorId && !localMode) setSector(user.sectorId);
+    setLoading(true);
+    void (async () => {
+      try {
+        const q = localMode ? loadQuestions() : await getQuestions();
+        if (active) {
+          setQuestions(q);
+          setDrafts(Object.fromEntries(q.map((x) => [x.id, x.text])));
+        }
+      } catch (err) {
+        if (active) setError((err as Error).message);
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [localMode, user?.id, reload]);
   const dirty = questions.some((q) => drafts[q.id]?.trim() !== q.text);
   useEffect(() => {
     const prevent = (e: BeforeUnloadEvent) => {
@@ -725,27 +985,53 @@ function QuestionEditor() {
     window.addEventListener('beforeunload', prevent);
     return () => window.removeEventListener('beforeunload', prevent);
   }, [dirty]);
-  function save(e: React.FormEvent) {
+  async function save(e: React.FormEvent) {
     e.preventDefault();
+    if (saving || !dirty) return;
+    setSaving(true);
     setError('');
     setStatus('');
     try {
-      const current = loadQuestions();
-      if (JSON.stringify(current) !== JSON.stringify(questions))
+      if (localMode && JSON.stringify(loadQuestions()) !== JSON.stringify(questions))
         throw new Error('As perguntas mudaram em outra aba. Recarregue a página antes de editar.');
-      const updated = questions.map((q) =>
+      const proposed = questions.map((q) =>
         drafts[q.id].trim() === q.text
           ? q
-          : { ...q, text: drafts[q.id].trim(), version: q.version + 1 },
+          : { ...q, text: drafts[q.id].trim(), version: q.version + (localMode ? 1 : 0) },
       );
-      saveQuestions(updated);
+      const updated = localMode
+        ? proposed
+        : await updateQuestions(
+            proposed,
+            Object.fromEntries(questions.map((q) => [q.id, q.version])),
+            csrfToken ?? '',
+          );
+      if (localMode) saveQuestions(updated);
       setQuestions(updated);
       setDrafts(Object.fromEntries(updated.map((q) => [q.id, q.text])));
       setStatus('Perguntas salvas. Novas pesquisas usarão esta versão.');
     } catch (err) {
       setError((err as Error).message);
+      if (err instanceof ApiError && err.status === 401) void refreshAuth();
+    } finally {
+      setSaving(false);
     }
   }
+  if (!localMode && !user)
+    return (
+      <div className="empty-state">
+        <ShieldCheck size={40} aria-hidden="true" />
+        <h1>As perguntas têm acesso administrativo.</h1>
+        <p>Entre para editar as perguntas dos setores sob sua responsabilidade.</p>
+        <a className="button primary" href="#/login">
+          Entrar na gestão
+        </a>
+        <a className="text-link" href="#/perguntas?modo=local">
+          Experimentar edição local
+        </a>
+        {authLoading && <p role="status">Verificando acesso…</p>}
+      </div>
+    );
   return (
     <>
       <div className="page-heading">
@@ -757,25 +1043,40 @@ function QuestionEditor() {
       <div className="notice">
         <Info size={22} aria-hidden="true" />
         <p>
-          Edição de demonstração, sem autenticação. As mudanças valem apenas neste navegador. As
-          respostas anteriores preservam a pergunta e a versão que foram respondidas.
+          {localMode
+            ? 'Edição local de demonstração. As mudanças valem apenas neste navegador.'
+            : user?.role === 'sector-admin'
+              ? `Sua conta pode editar somente as perguntas de ${sectorName(user.sectorId ?? '')}.`
+              : 'As mudanças são compartilhadas com as novas pesquisas de todos os setores.'}{' '}
+          As respostas anteriores preservam a pergunta e a versão que foram respondidas.
         </p>
       </div>
-      <form className="editor" onSubmit={save}>
+      {loading && (
+        <p className="status-message" role="status">
+          Carregando perguntas…
+        </p>
+      )}
+      <form className="editor" onSubmit={save} aria-busy={loading || saving}>
         <label className="editor-sector">
           Setor da pesquisa
           <select
+            disabled={loading || saving}
             value={sector}
             onChange={(e) => {
               setSector(e.target.value);
               setStatus('');
             }}
           >
-            {SECTORS.map((s) => (
+            {SECTORS.filter(
+              (s) => localMode || user?.role === 'manager' || s.id === user?.sectorId,
+            ).map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name}
               </option>
             ))}
+            {(localMode || user?.role === 'manager') && (
+              <option value="geral">Perguntas gerais do hospital</option>
+            )}
           </select>
         </label>
         {questions
@@ -793,6 +1094,7 @@ function QuestionEditor() {
                 minLength={8}
                 maxLength={160}
                 value={drafts[q.id] ?? ''}
+                disabled={saving}
                 onChange={(e) => {
                   setDrafts({ ...drafts, [q.id]: e.target.value });
                   setStatus('');
@@ -828,11 +1130,74 @@ function QuestionEditor() {
           <span className="muted small">
             {dirty ? 'Há alterações não salvas.' : 'Nenhuma alteração pendente.'}
           </span>
-          <button className="button primary" disabled={!dirty}>
-            Salvar perguntas
-          </button>
+          <div className="editor-button-group">
+            <button
+              type="button"
+              className="button secondary"
+              disabled={loading || saving}
+              onClick={() => {
+                setStatus('');
+                setReload((n) => n + 1);
+              }}
+            >
+              {dirty ? 'Descartar alterações e recarregar' : 'Recarregar perguntas'}
+            </button>
+            <button className="button primary" disabled={!dirty || loading || saving}>
+              {saving ? 'Salvando…' : 'Salvar perguntas'}
+            </button>
+          </div>
         </div>
       </form>
+      {!localMode && (
+        <form
+          className="editor new-question-form"
+          onSubmit={async (e) => {
+            e.preventDefault();
+            if (saving || dirty) return;
+            setSaving(true);
+            setError('');
+            setStatus('');
+            try {
+              await createQuestion(newText.trim(), sector as QuestionSectorId, csrfToken ?? '');
+              const list = await getQuestions();
+              setQuestions(list);
+              setDrafts(Object.fromEntries(list.map((q) => [q.id, q.text])));
+              setNewText('');
+              setStatus('Pergunta adicionada. As próximas pesquisas usarão esta pergunta.');
+            } catch (cause) {
+              setError((cause as Error).message);
+            } finally {
+              setSaving(false);
+            }
+          }}
+        >
+          <h2>Adicionar uma pergunta</h2>
+          <p className="muted small">
+            {sector === 'geral'
+              ? 'Perguntas gerais aparecem depois das específicas, em todas as pesquisas.'
+              : `Esta pergunta será aplicada a ${sectorName(sector)}.`}{' '}
+            Salve as alterações existentes antes de adicionar.
+          </p>
+          <label>
+            Nova pergunta
+            <textarea
+              minLength={8}
+              maxLength={160}
+              required
+              rows={2}
+              value={newText}
+              onChange={(e) => setNewText(e.target.value)}
+              disabled={saving || loading}
+            />
+          </label>
+          <button
+            className="button primary"
+            disabled={saving || loading || dirty || questions.length >= 60}
+          >
+            Adicionar pergunta
+          </button>
+        </form>
+      )}
     </>
   );
 }
@@ -866,8 +1231,8 @@ function Quality() {
     ],
     [
       'Segurança',
-      'Sem identificadores clínicos nesta etapa',
-      'Implementar autenticação, permissões e proteção do banco antes do uso real.',
+      'Sessões, perfis e contato autorizado',
+      'Verificar troca de senha, acesso por setor e separação dos dados de contato.',
     ],
     [
       'Manutenibilidade',
@@ -914,7 +1279,7 @@ function Quality() {
           <thead>
             <tr>
               <th>Característica</th>
-              <th>Aplicação no MediCare</th>
+              <th>Aplicação no projeto FHDOD</th>
               <th>Critério de verificação</th>
             </tr>
           </thead>

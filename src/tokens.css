@@ -1,10 +1,13 @@
 :root {
   --font: 'Manrope Variable', 'Segoe UI', sans-serif;
-  --ink: #243e30;
-  --muted: #637167;
-  --background: #f7f9f6;
-  --line: #e0e6df;
-  --green: #2d6147;
-  --deep-green: #173e34;
-  --focus: #558368;
+  --ink: #322a2d;
+  --muted: #70666a;
+  --background: #faf8f8;
+  --line: #e7dfe1;
+  --brand: #b71f2b;
+  --brand-deep: #571c26;
+  --brand-soft: #fbf0f2;
+  --green: var(--brand);
+  --deep-green: var(--brand-deep);
+  --focus: #b71f2b;
 }

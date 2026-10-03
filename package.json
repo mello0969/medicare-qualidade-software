@@ -1,18 +1,24 @@
 {
   "name": "medicare-qualidade-software",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.3.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --host 127.0.0.1",
+    "dev": "node scripts/dev.mjs",
+    "dev:frontend": "node --env-file-if-exists=.env node_modules/vite/bin/vite.js --host 127.0.0.1",
+    "start:api": "node --env-file-if-exists=.env server/index.mjs",
+    "admin:create": "node --env-file-if-exists=.env server/create-admin.mjs",
+    "admin:local": "node --env-file-if-exists=.env server/bootstrap-local.mjs",
     "build": "tsc --noEmit && vite build",
-    "preview": "vite preview --host 127.0.0.1",
-    "test": "vitest run",
+    "preview": "node --env-file-if-exists=.env node_modules/vite/bin/vite.js preview --host 127.0.0.1",
+    "test": "vitest run && node --test server/*.test.mjs",
+    "test:unit": "vitest run",
+    "test:api": "node --test server/*.test.mjs",
     "test:e2e": "playwright test",
-    "format:check": "prettier --check src tests package.json tsconfig.json vite.config.ts playwright.config.ts index.html"
+    "format:check": "prettier --check src server scripts tests package.json tsconfig.json vite.config.ts playwright.config.ts index.html"
   },
   "engines": {
-    "node": ">=22.12.0"
+    "node": ">=24.0.0"
   },
   "dependencies": {
     "@fontsource-variable/manrope": "5.3.0",

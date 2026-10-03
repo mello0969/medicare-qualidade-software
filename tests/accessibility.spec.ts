@@ -2,7 +2,14 @@ import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
 test('formulário e painel atendem à verificação automática de acessibilidade', async ({ page }) => {
-  for (const route of ['/', '/pesquisas', '/perguntas', '/qualidade', '/pesquisa/triagem']) {
+  for (const route of [
+    '/',
+    '/demonstracao',
+    '/pesquisas',
+    '/perguntas?modo=local',
+    '/qualidade',
+    '/pesquisa/triagem',
+  ]) {
     await page.goto(`/#${route}`);
     if (route === '/pesquisa/triagem')
       await page.getByRole('button', { name: 'Começar pesquisa' }).click();

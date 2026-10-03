@@ -11,14 +11,35 @@ import {
 } from '@phosphor-icons/react';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
-import { SECTORS, isSector, sectorName, type SectorId, type Question, type Shift } from './domain';
+import {
+  SECTORS,
+  isSector,
+  sectorName,
+  questionsForSectors,
+  DEFAULT_SETTINGS,
+  type SurveySettings,
+  type SurveySubmission,
+  type SectorId,
+  type Question,
+  type Shift,
+} from './domain';
 import { loadQuestions, saveResponse } from './storage';
+import { getQuestions, getSettings, submitResponse } from './api';
+import { useAuth } from './Auth';
+import Brand from './Brand';
 
 gsap.registerPlugin(useGSAP);
 const labels = ['Muito ruim', 'Ruim', 'Regular', 'Bom', 'Muito bom'];
 const Faces = [SmileySad, SmileySad, SmileyMeh, Smiley, Smiley];
 
-export default function Survey({ sector }: { sector?: string }) {
+export default function Survey({
+  sector,
+  localMode = false,
+}: {
+  sector?: string;
+  localMode?: boolean;
+}) {
+  const { user } = useAuth();
   const [selected, setSelected] = useState<SectorId[]>(isSector(sector) ? [sector] : []);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [step, setStep] = useState(-1);
@@ -30,6 +51,17 @@ export default function Survey({ sector }: { sector?: string }) {
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [starting, setStarting] = useState(false);
+  const [settings, setSettings] = useState<SurveySettings>(DEFAULT_SETTINGS);
+  const [wantsContact, setWantsContact] = useState(false);
+  const [contact, setContact] = useState({ name: '', phone: '', email: '', message: '' });
+  const [consent, setConsent] = useState(false);
+  const confirmationDialog = useRef<HTMLDialogElement>(null);
+  const errorNode = useRef<HTMLParagraphElement>(null);
+  const pending = useRef(false);
+  const lowRating = questions.some(
+    (question) => values[question.id] === 1 || values[question.id] === 2,
+  );
   const id = useRef(crypto.randomUUID());
   const heading = useRef<HTMLHeadingElement>(null);
   const success = useRef<HTMLDivElement>(null);
@@ -53,33 +85,47 @@ export default function Survey({ sector }: { sector?: string }) {
     { scope: success, dependencies: [done], revertOnUpdate: true },
   );
 
-  function start() {
+  async function start() {
+    if (starting) return;
     if (!selected.length) {
       setError('Selecione pelo menos um setor por onde você passou.');
       return;
     }
+    setStarting(true);
     try {
-      setQuestions(loadQuestions().filter((q) => selected.includes(q.sectorId)));
+      const [list, messages] = localMode
+        ? [loadQuestions(), DEFAULT_SETTINGS]
+        : await Promise.all([getQuestions(), getSettings()]);
+      setQuestions(questionsForSectors(list, selected));
+      setSettings(messages);
+      setConsent(false);
       setError('');
       setStep(0);
     } catch (err) {
       setError((err as Error).message);
+    } finally {
+      setStarting(false);
     }
   }
   function next() {
     if (question && values[question.id] === undefined) {
-      setError('Escolha uma nota ou selecione “Não sei avaliar”.');
+      setError('Escolha uma nota ou use “Pular pergunta”.');
+      return;
+    }
+    if (step === questions.length && nps === null) {
+      setError('Escolha uma nota de 0 a 10. A recomendação é obrigatória.');
       return;
     }
     setError('');
     setStep((s) => s + 1);
   }
-  function submit() {
-    if (saving || done) return;
+  async function submit() {
+    if (pending.current || done) return;
+    pending.current = true;
     setSaving(true);
     setError('');
     try {
-      saveResponse({
+      const response: SurveySubmission = {
         id: id.current,
         createdAt: new Date().toISOString(),
         sectorIds: selected,
@@ -96,13 +142,53 @@ export default function Survey({ sector }: { sector?: string }) {
         comment: comment.trim(),
         shift,
         doctor: doctor.trim(),
-      });
+        ...(lowRating && wantsContact && !localMode
+          ? {
+              contactRequest: {
+                ...(Object.fromEntries(
+                  Object.entries(contact).map(([key, value]) => [key, value.trim()]),
+                ) as typeof contact),
+                consent: true,
+                settingsVersion: settings.version,
+              },
+            }
+          : {}),
+      };
+      if (localMode) saveResponse(response);
+      else await submitResponse(response);
+      confirmationDialog.current?.close();
       setDone(true);
     } catch (err) {
       setError((err as Error).message);
     } finally {
       setSaving(false);
+      pending.current = false;
     }
+  }
+  function review() {
+    let problem = '';
+    if (nps === null) problem = 'Escolha a nota de recomendação antes de enviar.';
+    if (lowRating && wantsContact && !localMode) {
+      if (contact.name.trim().length < 2)
+        problem = 'Informe um nome para contato com pelo menos 2 caracteres.';
+      else if (
+        !/^[+\d()\s-]{8,20}$/.test(contact.phone.trim()) ||
+        contact.phone.replace(/\D/g, '').length < 8
+      )
+        problem = 'Informe um telefone válido para contato.';
+      else if (contact.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact.email.trim()))
+        problem = 'Confira o e-mail para contato ou deixe-o em branco.';
+      else if (contact.message.trim().length < 10)
+        problem = 'Conte o que aconteceu usando pelo menos 10 caracteres.';
+      else if (!consent)
+        problem = 'Autorize o uso dos dados para contato ou desmarque o pedido de contato.';
+    }
+    setError(problem);
+    if (problem) {
+      requestAnimationFrame(() => errorNode.current?.focus());
+      return;
+    }
+    confirmationDialog.current?.showModal();
   }
 
   if (sector && !isSector(sector))
@@ -119,9 +205,7 @@ export default function Survey({ sector }: { sector?: string }) {
   return (
     <div className="survey-shell">
       <aside className="survey-aside">
-        <a href="#/" className="brand light">
-          <span className="brand-mark">M</span>MediCare<span className="brand-dot">.</span>
-        </a>
+        <Brand className="light" />
         <div className="survey-intro">
           <Heart size={42} weight="light" aria-hidden="true" />
           <h2>Ouvir você faz parte do cuidado.</h2>
@@ -129,14 +213,16 @@ export default function Survey({ sector }: { sector?: string }) {
         </div>
         <div className="aside-note">
           <ShieldCheck size={22} aria-hidden="true" />
-          <p>Não pedimos seu nome, documento ou informações sobre sua saúde.</p>
+          <p>
+            A avaliação pode ser anônima. Dados de contato são opcionais e exigem sua autorização.
+          </p>
         </div>
         <span className="aside-project">Projeto acadêmico · versão de demonstração</span>
       </aside>
       <main className="survey-main" id="conteudo">
         <div className="survey-top">
           <a className="text-link" href="#/">
-            <CaretLeft aria-hidden="true" /> Voltar ao painel
+            <CaretLeft aria-hidden="true" /> Página inicial
           </a>
           <span>Pesquisa de satisfação</span>
         </div>
@@ -165,9 +251,10 @@ export default function Survey({ sector }: { sector?: string }) {
               <h1 ref={heading} tabIndex={-1}>
                 Obrigado por compartilhar.
               </h1>
-              <p>Sua resposta foi salva neste navegador.</p>
+              <p>{localMode ? 'Sua resposta foi salva neste navegador.' : settings.successText}</p>
               <p className="muted">
-                Esta é uma demonstração acadêmica. A resposta não foi enviada a um hospital.
+                Esta é uma demonstração acadêmica. A resposta e qualquer pedido de contato não foram
+                enviados à FHDOD.
               </p>
               <button
                 className="button primary"
@@ -179,14 +266,22 @@ export default function Survey({ sector }: { sector?: string }) {
                   setComment('');
                   setShift('nao-informado');
                   setDoctor('');
+                  setWantsContact(false);
+                  setConsent(false);
+                  setContact({ name: '', phone: '', email: '', message: '' });
                   id.current = crypto.randomUUID();
                 }}
               >
                 Iniciar outra pesquisa
               </button>
-              <a className="text-link" href="#/painel?dados=locais">
-                Ver a resposta no painel
-              </a>
+              {(localMode || user) && (
+                <a
+                  className="text-link"
+                  href={localMode ? '#/painel?dados=locais&modo=local' : '#/painel?dados=servidor'}
+                >
+                  Ver a resposta no painel
+                </a>
+              )}
             </div>
           ) : (
             <>
@@ -199,8 +294,8 @@ export default function Survey({ sector }: { sector?: string }) {
                   </h1>
                   <p className="survey-description">
                     {sector
-                      ? 'Responda com calma. Você pode pular uma pergunta se não souber avaliar.'
-                      : 'Selecione os setores que fizeram parte do seu atendimento. Vamos perguntar só sobre eles.'}
+                      ? 'Primeiro, perguntas específicas do setor; depois, perguntas gerais. Você pode pular avaliações. A nota de recomendação é obrigatória.'
+                      : 'Selecione os setores do seu atendimento. As perguntas específicas vêm primeiro, seguidas das gerais e da recomendação obrigatória.'}
                   </p>
                   <fieldset className="sector-choices">
                     <legend className="sr-only">Setores utilizados</legend>
@@ -232,12 +327,14 @@ export default function Survey({ sector }: { sector?: string }) {
                   <div className="privacy-note">
                     <ShieldCheck size={20} aria-hidden="true" />
                     <span>
-                      Use somente informações fictícias nesta versão. As respostas ficam salvas
-                      neste navegador e podem ser vistas no painel.
+                      Use somente informações fictícias nesta versão.{' '}
+                      {localMode
+                        ? 'As respostas ficam neste navegador.'
+                        : 'As respostas são reunidas no painel, acessível à equipe responsável.'}
                     </span>
                   </div>
-                  <button className="button primary wide" onClick={start}>
-                    Começar pesquisa
+                  <button className="button primary wide" onClick={start} disabled={starting}>
+                    {starting ? 'Preparando pesquisa…' : 'Começar pesquisa'}
                   </button>
                 </>
               ) : question ? (
@@ -279,26 +376,24 @@ export default function Survey({ sector }: { sector?: string }) {
                       );
                     })}
                   </fieldset>
-                  <label className="skip-choice">
-                    <input
-                      type="radio"
-                      name={question.id}
-                      checked={values[question.id] === 0}
-                      onChange={() => {
-                        setValues({ ...values, [question.id]: 0 });
-                        setError('');
-                      }}
-                    />
-                    Não sei avaliar
-                  </label>
+                  <button
+                    className="survey-skip"
+                    onClick={() => {
+                      setValues({ ...values, [question.id]: 0 });
+                      setError('');
+                      setStep((s) => s + 1);
+                    }}
+                  >
+                    Pular pergunta
+                  </button>
                 </>
               ) : step === questions.length ? (
                 <>
                   <h1 ref={heading} tabIndex={-1}>
-                    Você recomendaria o hospital a um familiar?
+                    Você recomendaria o Hospital Dr. Oswaldo Diesel a um familiar?
                   </h1>
                   <p className="survey-description">
-                    De 0 a 10, qual seria a chance de você recomendar?
+                    De 0 a 10, qual seria a chance de você recomendar? Esta pergunta é obrigatória.
                   </p>
                   <fieldset className="nps-options">
                     <legend className="sr-only">Chance de recomendar de 0 a 10</legend>
@@ -318,15 +413,6 @@ export default function Survey({ sector }: { sector?: string }) {
                     <span>0 · Não recomendaria</span>
                     <span>10 · Recomendaria muito</span>
                   </div>
-                  <label className="skip-choice">
-                    <input
-                      type="radio"
-                      name="nps"
-                      checked={nps === null}
-                      onChange={() => setNps(null)}
-                    />
-                    Prefiro não responder
-                  </label>
                 </>
               ) : (
                 <>
@@ -344,6 +430,7 @@ export default function Survey({ sector }: { sector?: string }) {
                     value={comment}
                     onChange={(e) => setComment(e.target.value)}
                     maxLength={600}
+                    disabled={saving}
                     rows={4}
                     placeholder="Conte como foi sua experiência. Não inclua nomes ou informações de saúde."
                   />
@@ -354,7 +441,11 @@ export default function Survey({ sector }: { sector?: string }) {
                     <div className="field-grid">
                       <label>
                         Plantão
-                        <select value={shift} onChange={(e) => setShift(e.target.value as Shift)}>
+                        <select
+                          value={shift}
+                          onChange={(e) => setShift(e.target.value as Shift)}
+                          disabled={saving}
+                        >
                           <option value="nao-informado">Não sei informar</option>
                           <option value="par">Par</option>
                           <option value="impar">Ímpar</option>
@@ -366,19 +457,100 @@ export default function Survey({ sector }: { sector?: string }) {
                           value={doctor}
                           onChange={(e) => setDoctor(e.target.value)}
                           maxLength={40}
+                          disabled={saving}
                           placeholder="Ex.: Profissional A"
                         />
                       </label>
                     </div>
                   </details>
-                  <p className="muted small">
-                    Nesta etapa do projeto, a pesquisa não solicita nem encaminha pedidos de
-                    retorno.
-                  </p>
+                  {lowRating && !localMode && (
+                    <section className="contact-opt-in" aria-labelledby="contact-heading">
+                      <h2 id="contact-heading">Podemos ouvir você com mais atenção?</h2>
+                      <p>{settings.contactPrompt}</p>
+                      <label className="contact-checkbox">
+                        <input
+                          type="checkbox"
+                          checked={wantsContact}
+                          disabled={saving}
+                          onChange={(e) => {
+                            setWantsContact(e.target.checked);
+                            setConsent(false);
+                            setError('');
+                          }}
+                        />
+                        Quero receber contato da ouvidoria
+                      </label>
+                      {wantsContact && (
+                        <div className="contact-fields">
+                          <p className="academic-disclaimer">
+                            Use dados fictícios. Este pedido ficará apenas no projeto acadêmico e
+                            não será enviado ao hospital.
+                          </p>
+                          <label>
+                            Nome para contato
+                            <input
+                              autoComplete="name"
+                              maxLength={80}
+                              value={contact.name}
+                              disabled={saving}
+                              onChange={(e) => setContact({ ...contact, name: e.target.value })}
+                            />
+                          </label>
+                          <label>
+                            Telefone para contato
+                            <input
+                              type="tel"
+                              autoComplete="tel"
+                              maxLength={20}
+                              value={contact.phone}
+                              disabled={saving}
+                              onChange={(e) => setContact({ ...contact, phone: e.target.value })}
+                            />
+                          </label>
+                          <label>
+                            E-mail para contato (opcional)
+                            <input
+                              type="email"
+                              autoComplete="email"
+                              maxLength={254}
+                              value={contact.email}
+                              disabled={saving}
+                              onChange={(e) => setContact({ ...contact, email: e.target.value })}
+                            />
+                          </label>
+                          <label>
+                            Conte o que aconteceu
+                            <textarea
+                              rows={4}
+                              maxLength={1200}
+                              value={contact.message}
+                              disabled={saving}
+                              onChange={(e) => setContact({ ...contact, message: e.target.value })}
+                            />
+                          </label>
+                          <label className="contact-checkbox">
+                            <input
+                              type="checkbox"
+                              checked={consent}
+                              disabled={saving}
+                              onChange={(e) => setConsent(e.target.checked)}
+                            />
+                            {settings.contactConsent}
+                          </label>
+                        </div>
+                      )}
+                    </section>
+                  )}
+                  {lowRating && localMode && (
+                    <p className="muted small">
+                      O modo local não registra pedidos de contato. Use a pesquisa conectada para
+                      experimentar a ouvidoria com dados fictícios.
+                    </p>
+                  )}
                 </>
               )}
               {error && (
-                <p className="error-message" role="alert">
+                <p className="error-message" role="alert" ref={errorNode} tabIndex={-1}>
                   {error}
                 </p>
               )}
@@ -386,6 +558,7 @@ export default function Survey({ sector }: { sector?: string }) {
                 <div className="survey-actions">
                   <button
                     className="button secondary"
+                    disabled={saving}
                     onClick={() => {
                       setError('');
                       setStep((s) => s - 1);
@@ -395,7 +568,7 @@ export default function Survey({ sector }: { sector?: string }) {
                   </button>
                   <button
                     className="button primary"
-                    onClick={step === questions.length + 1 ? submit : next}
+                    onClick={step === questions.length + 1 ? review : next}
                     disabled={saving}
                   >
                     {saving
@@ -409,7 +582,46 @@ export default function Survey({ sector }: { sector?: string }) {
             </>
           )}
         </div>
-        <footer className="survey-footer">MediCare · Sua experiência importa.</footer>
+        <dialog
+          className="confirmation-dialog"
+          ref={confirmationDialog}
+          aria-labelledby="confirm-heading"
+          onCancel={(e) => {
+            if (saving) e.preventDefault();
+          }}
+        >
+          <h2 id="confirm-heading">Confirmar suas respostas</h2>
+          <p>{settings.confirmationText}</p>
+          <dl>
+            <dt>Avaliações respondidas</dt>
+            <dd>{questions.filter((question) => values[question.id] > 0).length}</dd>
+            <dt>Nota de recomendação</dt>
+            <dd>{nps ?? '—'} / 10</dd>
+            <dt>Pedido de contato</dt>
+            <dd>{lowRating && wantsContact && !localMode ? 'Autorizado' : 'Não solicitado'}</dd>
+          </dl>
+          <p className="academic-disclaimer">
+            Os registros ficam neste protótipo acadêmico. Não serão enviados ao hospital.
+          </p>
+          {error && (
+            <p className="error-message" role="alert">
+              {error}
+            </p>
+          )}
+          <div className="survey-actions">
+            <button
+              className="button secondary"
+              disabled={saving}
+              onClick={() => confirmationDialog.current?.close()}
+            >
+              Voltar e revisar
+            </button>
+            <button className="button primary" disabled={saving} onClick={() => void submit()}>
+              {saving ? 'Enviando…' : 'Confirmar envio'}
+            </button>
+          </div>
+        </dialog>
+        <footer className="survey-footer">FHDOD · Três Coroas/RS · Protótipo acadêmico</footer>
       </main>
     </div>
   );

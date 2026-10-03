@@ -1,0 +1,247 @@
+.access-page {
+  min-height: 100dvh;
+  padding: 32px clamp(20px, 6vw, 100px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.access-page .auth-page {
+  width: 100%;
+  min-height: 540px;
+  margin: 24px auto;
+}
+.access-footer {
+  max-width: 1000px;
+  width: 100%;
+  margin: 20px auto;
+  color: var(--muted);
+  font-size: 0.8125rem;
+  line-height: 1.7;
+}
+.access-footer a {
+  display: inline-block;
+  margin-top: 8px;
+}
+.password-page {
+  align-items: center;
+  gap: 25px;
+}
+.password-panel {
+  width: 100%;
+  max-width: 520px;
+}
+.password-panel h1 {
+  font-size: 1.75rem;
+}
+.academic-disclaimer {
+  color: var(--muted);
+  font-size: 0.8125rem;
+  max-width: 65ch;
+}
+.settings-form {
+  display: grid;
+  gap: 24px;
+}
+.settings-form label {
+  display: grid;
+  gap: 8px;
+}
+.new-question-form {
+  margin-top: 24px;
+  display: grid;
+  gap: 15px;
+}
+.new-question-form label {
+  display: grid;
+  gap: 8px;
+}
+.new-question-form .button {
+  justify-self: start;
+}
+.contact-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 40px;
+  padding: 20px 0 30px;
+}
+.contact-summary > div {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+}
+.contact-summary strong {
+  font-size: 1.75rem;
+  font-variant-numeric: tabular-nums;
+}
+.contact-summary span {
+  color: var(--muted);
+}
+.contact-filter {
+  display: grid;
+  gap: 8px;
+  max-width: 300px;
+  margin: 0 0 24px;
+}
+.contact-list {
+  display: grid;
+  gap: 20px;
+}
+.contact-record header {
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.contact-record h2 {
+  font-size: 1.125rem;
+}
+.contact-record header p {
+  margin-top: 8px;
+}
+.contact-message {
+  margin: 24px 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.75;
+}
+.contact-record dl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 25px;
+  margin-bottom: 20px;
+}
+.contact-record dt {
+  color: var(--muted);
+  font-size: 0.8125rem;
+  margin-bottom: 5px;
+}
+.contact-record dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.contact-record details {
+  font-size: 0.875rem;
+  margin: 20px 0;
+}
+.contact-record details p {
+  margin-top: 12px;
+  line-height: 1.7;
+}
+.contact-record > label {
+  display: grid;
+  gap: 8px;
+  max-width: 300px;
+}
+.survey-skip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-top: 15px;
+  padding: 5px 8px;
+  font-size: 0.8125rem;
+  color: var(--muted);
+  background: transparent;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.contact-opt-in {
+  margin: 28px 0 12px;
+  border-top: 1px solid var(--line);
+  padding-top: 25px;
+}
+.contact-opt-in > h2 {
+  font-size: 1.125rem;
+  margin-bottom: 12px;
+}
+.contact-opt-in p {
+  line-height: 1.7;
+}
+.contact-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 18px 0;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  cursor: pointer;
+}
+.contact-checkbox input {
+  width: 20px;
+  height: 20px;
+  margin: 3px 0 0;
+  flex-shrink: 0;
+}
+.contact-fields {
+  display: grid;
+  gap: 20px;
+  margin-top: 22px;
+}
+.contact-fields > label:not(.contact-checkbox) {
+  display: grid;
+  gap: 8px;
+}
+.confirmation-dialog {
+  max-width: 520px;
+  width: calc(100% - 36px);
+  padding: 30px;
+  background: white;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.confirmation-dialog::backdrop {
+  background: rgba(38, 22, 25, 0.45);
+}
+.confirmation-dialog h2 {
+  font-size: 1.5rem;
+}
+.confirmation-dialog p {
+  margin-top: 15px;
+  line-height: 1.7;
+}
+.confirmation-dialog dl {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  margin: 20px 0;
+}
+.confirmation-dialog dd {
+  margin: 0;
+  text-align: right;
+}
+.confirmation-dialog .survey-actions {
+  margin-top: 24px;
+}
+.quality-follow-up {
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 12px 0 22px;
+  font-size: 0.875rem;
+}
+.quality-follow-up p {
+  color: var(--muted);
+}
+@media (max-width: 620px) {
+  .access-page {
+    padding: 24px 18px;
+    justify-content: flex-start;
+  }
+  .access-page .auth-page {
+    margin: 0 auto;
+  }
+  .contact-summary {
+    gap: 25px;
+  }
+  .contact-record header {
+    flex-direction: column;
+  }
+  .confirmation-dialog {
+    padding: 24px 20px;
+  }
+  .contact-fields input {
+    font-size: 1rem;
+  }
+}
