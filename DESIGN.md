@@ -1,5 +1,0 @@
-# Direção visual do projeto FHDOD
-
-Superfície operacional, clara e acolhedora. A identidade segue a logo original da Fundação Hospitalar Dr. Oswaldo Diesel: vermelho nas ações, vinho sóbrio na navegação e fundos neutros claros. Logo intacta em superfície branca, sem redesenho. Fonte Manrope local, títulos compactos, números tabulares e bordas sutis. Verde permanece apenas nos indicadores positivos. O formulário mostra uma pergunta por etapa, sem navegação administrativa concorrendo pela atenção.
-
-Entrada: login da equipe e acesso separado à pesquisa. Painel: navegação lateral no desktop, barra compacta no celular; filtros antes dos indicadores, resultados por setor e comentários. Formulário: contexto lateral no desktop, uma coluna no celular; perguntas específicas antes das gerais. Pular fica discreto, legível e com área de toque adequada. Contato opcional após nota 1/2, autorização explícita e diálogo de confirmação. As animações só confirmam conclusão; não atrasam o preenchimento. O caráter acadêmico e a ausência de integração real devem permanecer visíveis.

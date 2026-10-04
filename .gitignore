@@ -3,6 +3,8 @@
 # Ferramentas de desenvolvimento mantidas apenas neste computador
 .agents/
 /AGENTS.md
+/DESIGN.md
+/PRODUCT.md
 skills-lock.json
 .impeccable/
 node_modules/
