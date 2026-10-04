@@ -1,12 +1,14 @@
 # Playwright CLI output (may contain credentials)
 .playwright-cli/
+# Ferramentas de desenvolvimento mantidas apenas neste computador
+.agents/
+/AGENTS.md
+skills-lock.json
+.impeccable/
 node_modules/
 dist/
 test-results/
 playwright-report/
-.impeccable/review/
-.impeccable/cache/
-.impeccable/state/
 *.local
 data/
 .local/
