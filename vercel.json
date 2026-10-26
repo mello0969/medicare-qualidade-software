@@ -5,7 +5,10 @@
   "outputDirectory": "dist",
   "regions": ["gru1"],
   "functions": {
-    "api/index.mjs": { "maxDuration": 30 }
+    "api/index.mjs": {
+      "maxDuration": 30,
+      "includeFiles": "src/{domain,validation,wall,schedules}.ts"
+    }
   },
   "rewrites": [{ "source": "/api/:path*", "destination": "/api" }],
   "headers": [
