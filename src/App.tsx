@@ -8,7 +8,6 @@ import {
   DownloadSimple,
   CaretRight,
   CheckCircle,
-  Copy,
   LinkSimple,
   ArrowSquareOut,
   Heart,
@@ -18,6 +17,7 @@ import {
   X,
   FirstAid,
   ShieldCheck,
+  Monitor,
 } from '@phosphor-icons/react';
 import Survey from './Survey';
 import {
@@ -29,6 +29,7 @@ import {
   sectorSummary,
   sectorName,
   localDate,
+  SHIFT_LABELS,
   type Filters,
   type Question,
   type SurveyResponse,
@@ -42,6 +43,10 @@ import UsersPage from './Users';
 import Brand from './Brand';
 import PasswordChange from './PasswordChange';
 import { OmbudsmanPage, SettingsPage } from './Administration';
+import SurveyLinks from './SurveyLinks';
+import TVWall from './TVWall';
+import { ROLE_LABELS } from './access';
+import Schedules from './SchedulesPage';
 
 const nav = [
   { path: '/', label: 'Visão geral', icon: SquaresFour },
@@ -51,7 +56,16 @@ const nav = [
   { path: '/usuarios', label: 'Acessos da equipe', icon: Users },
   { path: '/ouvidoria', label: 'Ouvidoria', icon: ChatCircleText },
   { path: '/configuracoes', label: 'Mensagens da pesquisa', icon: SlidersHorizontal },
+  { path: '/tv-wall', label: 'TV Wall', icon: Monitor },
+  { path: '/escalas', label: 'Escalas das equipes', icon: Users },
 ];
+function canVisit(role: string | undefined, path: string) {
+  if (path === '/usuarios' || path === '/configuracoes') return role === 'manager';
+  if (path === '/ouvidoria') return role === 'manager' || role === 'ombudsman';
+  if (path === '/perguntas') return role === 'manager' || role === 'sector-admin';
+  if (path === '/escalas') return ['manager', 'sector-admin', 'management'].includes(role ?? '');
+  return true;
+}
 function useRoute() {
   const [route, setRoute] = useState(location.hash.slice(1) || '/');
   useEffect(() => {
@@ -119,6 +133,7 @@ function Application() {
     document.title = `FHDOD · ${user?.mustChangePassword ? 'Defina sua senha' : path.startsWith('/pesquisa/') || path === '/pesquisa' ? 'Sua experiência' : !user && (path === '/' || path === '/login') ? 'Acesso à gestão' : (nav.find((n) => n.path === path)?.label ?? 'Visão geral')}`;
   }, [path, user?.id, user?.mustChangePassword]);
   if (user?.mustChangePassword) return <PasswordChange />;
+  if (path === '/tv-wall') return <TVWall demo={params.get('dados') === 'exemplo'} />;
   if (path === '/pesquisa' || path.startsWith('/pesquisa/'))
     return (
       <Survey key={`${path}-${localMode}`} sector={path.split('/')[2]} localMode={localMode} />
@@ -127,7 +142,15 @@ function Application() {
     path === '/login' ||
     (!user &&
       !localMode &&
-      ['/', '/painel', '/perguntas', '/usuarios', '/ouvidoria', '/configuracoes'].includes(path))
+      [
+        '/',
+        '/painel',
+        '/perguntas',
+        '/usuarios',
+        '/ouvidoria',
+        '/configuracoes',
+        '/escalas',
+      ].includes(path))
   )
     return (
       <main className="access-page">
@@ -158,11 +181,7 @@ function Application() {
         <p className="sidebar-subtitle">Escuta e cuidado</p>
         <nav aria-label="Navegação principal">
           {nav
-            .filter(
-              (n) =>
-                !['/usuarios', '/ouvidoria', '/configuracoes'].includes(n.path) ||
-                user?.role === 'manager',
-            )
+            .filter((n) => canVisit(user?.role, n.path))
             .map((n) => (
               <a
                 key={n.path}
@@ -191,9 +210,7 @@ function Application() {
               {user?.name ?? 'Projeto integrado'}
               <small>
                 {user
-                  ? user.role === 'manager'
-                    ? 'Administrador · acesso total'
-                    : sectorName(user.sectorId ?? '')
+                  ? `${ROLE_LABELS[user.role]}${user.role === 'sector-admin' ? ` · ${sectorName(user.sectorId ?? '')}` : ''}`
                   : 'Ambiente acadêmico'}
               </small>
             </span>
@@ -238,10 +255,22 @@ function Application() {
               {logoutError}
             </p>
           )}
-          {path === '/' || path === '/painel' || path === '/demonstracao' ? (
-            <Dashboard
-              requestedMode={path === '/demonstracao' ? 'exemplo' : (params.get('dados') ?? '')}
-            />
+          {!canVisit(user?.role, path) && !localMode ? (
+            <div className="empty-state">
+              <ShieldCheck size={40} aria-hidden="true" />
+              <h1>Seu perfil não tem acesso a esta área.</h1>
+              <a href="#/painel" className="button primary">
+                Voltar ao painel
+              </a>
+            </div>
+          ) : path === '/' || path === '/painel' || path === '/demonstracao' ? (
+            user && ['viewer', 'ombudsman'].includes(user.role) && path !== '/demonstracao' ? (
+              <TVWall embedded />
+            ) : (
+              <Dashboard
+                requestedMode={path === '/demonstracao' ? 'exemplo' : (params.get('dados') ?? '')}
+              />
+            )
           ) : path === '/pesquisas' ? (
             <SurveyLinks />
           ) : path === '/perguntas' ? (
@@ -256,6 +285,8 @@ function Application() {
             <OmbudsmanPage />
           ) : path === '/configuracoes' ? (
             <SettingsPage />
+          ) : path === '/escalas' ? (
+            <Schedules />
           ) : (
             <div className="empty-state">
               <h1>Página não encontrada</h1>
@@ -267,7 +298,7 @@ function Application() {
         </main>
         <footer className="app-footer">
           <span>FHDOD · Três Coroas/RS · Projeto acadêmico</span>
-          <span>Versão 0.3 · Desenvolvimento por etapas</span>
+          <span>Versão 0.4 · Desenvolvimento por etapas</span>
         </footer>
       </div>
     </div>
@@ -376,6 +407,7 @@ function Dashboard({ requestedMode }: { requestedMode: string }) {
       (mode !== 'server' || user?.role !== 'sector-admin' || s.id === user.sectorId),
   );
   const doctors = [...new Set(source.map((r) => r.doctor).filter(Boolean))].sort();
+  const teams = [...new Set(source.flatMap((r) => r.teams?.map((team) => team.name) ?? []))].sort();
   const updateFilter = (key: keyof Filters, value: string) =>
     setFilters((f) => ({ ...f, [key]: value }));
   async function download() {
@@ -526,9 +558,20 @@ function Dashboard({ requestedMode }: { requestedMode: string }) {
           Plantão
           <select value={filters.shift} onChange={(e) => updateFilter('shift', e.target.value)}>
             <option value="">Todos os plantões</option>
-            <option value="par">Par</option>
-            <option value="impar">Ímpar</option>
-            <option value="nao-informado">Não informado</option>
+            {Object.entries(SHIFT_LABELS).map(([value, label]) => (
+              <option value={value} key={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Equipe da escala
+          <select value={filters.team ?? ''} onChange={(e) => updateFilter('team', e.target.value)}>
+            <option value="">Todas as equipes</option>
+            {teams.map((team) => (
+              <option key={team}>{team}</option>
+            ))}
           </select>
         </label>
         <label>
@@ -856,84 +899,6 @@ function ResponseChart({ responses }: { responses: SurveyResponse[] }) {
           </tbody>
         </table>
       </details>
-    </>
-  );
-}
-
-function SurveyLinks() {
-  const [status, setStatus] = useState('');
-  async function copy(id: string) {
-    const url = new URL(location.href);
-    url.hash = `/pesquisa/${id}`;
-    try {
-      await navigator.clipboard.writeText(url.href);
-      setStatus(`Link de ${sectorName(id)} copiado.`);
-    } catch {
-      setStatus(
-        'Não foi possível copiar automaticamente. Selecione o endereço do setor e copie manualmente.',
-      );
-    }
-  }
-  return (
-    <>
-      <div className="page-heading">
-        <div>
-          <h1>Pesquisas por setor</h1>
-          <p>Um caminho direto para cada experiência de atendimento.</p>
-        </div>
-        <a className="button primary" href="#/pesquisa">
-          Pesquisa completa
-        </a>
-      </div>
-      <div className="notice">
-        <Info size={22} aria-hidden="true" />
-        <p>
-          As pesquisas abaixo enviam respostas ao mesmo servidor. Para usar em celulares e tablets,
-          o site precisa estar acessível na rede ou em uma hospedagem.
-        </p>
-      </div>
-      {status && (
-        <p role="status" className="status-message">
-          {status}
-        </p>
-      )}
-      <div className="sector-link-list">
-        {SECTORS.map((s, i) => (
-          <article key={s.id}>
-            <span className="sector-number">{String(i + 1).padStart(2, '0')}</span>
-            <div className="sector-link-info">
-              <h2>{s.name}</h2>
-              <p>{s.description} · perguntas específicas, gerais e NPS</p>
-              <label className="sr-only" htmlFor={`url-${s.id}`}>
-                URL de {s.name}
-              </label>
-              <input
-                id={`url-${s.id}`}
-                readOnly
-                value={`${location.href.split('#')[0]}#/pesquisa/${s.id}`}
-                onFocus={(e) => e.target.select()}
-              />
-            </div>
-            <div className="link-actions">
-              <button className="button secondary" onClick={() => copy(s.id)}>
-                <Copy size={18} aria-hidden="true" />
-                Copiar link
-              </button>
-              <a className="button primary" href={`#/pesquisa/${s.id}`}>
-                Abrir pesquisa
-                <ArrowSquareOut size={18} aria-hidden="true" />
-              </a>
-            </div>
-          </article>
-        ))}
-      </div>
-      <div className="next-stage">
-        <h2>Próxima etapa: do atendimento ao convite</h2>
-        <p>
-          O envio no dia seguinte depende da integração com os atendimentos e de um canal de
-          comunicação autorizado. Nenhuma mensagem é enviada por esta versão.
-        </p>
-      </div>
     </>
   );
 }

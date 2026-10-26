@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useAuth } from './Auth';
 import { ApiError, getContacts, getSettings, updateContactStatus, updateSettings } from './api';
+import { canManageContacts } from './access';
 import { sectorName, type ContactRequest, type ContactStatus, type SurveySettings } from './domain';
 
 const statusNames: Record<ContactStatus, string> = {
@@ -8,12 +9,14 @@ const statusNames: Record<ContactStatus, string> = {
   'em-analise': 'Em análise',
   concluido: 'Concluído',
 };
-function Restricted() {
+function Restricted({ contacts = false }: { contacts?: boolean }) {
   return (
     <div className="empty-state">
-      <h1>Área exclusiva do administrador</h1>
+      <h1>Acesso restrito</h1>
       <p>
-        Pedidos de contato e mensagens da pesquisa são administrados pelo perfil com acesso total.
+        {contacts
+          ? 'Pedidos de contato podem ser consultados e tratados pelos perfis Super Admin e Ouvidoria.'
+          : 'As mensagens da pesquisa são administradas exclusivamente pelo perfil Super Admin.'}
       </p>
       <a href="#/" className="button primary">
         Voltar ao início
@@ -35,7 +38,7 @@ export function OmbudsmanPage() {
     let active = true;
     setContacts([]);
     setError('');
-    if (user?.role !== 'manager') return;
+    if (!canManageContacts(user?.role)) return;
     setLoading(true);
     getContacts()
       .then((data) => {
@@ -53,8 +56,8 @@ export function OmbudsmanPage() {
     return () => {
       active = false;
     };
-  }, [user?.id, reload, refresh]);
-  if (user?.role !== 'manager') return <Restricted />;
+  }, [user?.id, user?.role, reload, refresh]);
+  if (!canManageContacts(user?.role)) return <Restricted contacts />;
   async function changeStatus(contact: ContactRequest, status: ContactStatus) {
     if (saving) return;
     setSaving(contact.id);
@@ -227,7 +230,7 @@ export function SettingsPage() {
     return () => {
       active = false;
     };
-  }, [user?.id, reload]);
+  }, [user?.id, user?.role, reload]);
   if (user?.role !== 'manager') return <Restricted />;
   const dirty = JSON.stringify(draft) !== JSON.stringify(original);
   async function save(event: FormEvent) {

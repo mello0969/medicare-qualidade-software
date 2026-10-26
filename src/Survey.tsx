@@ -17,6 +17,7 @@ import {
   sectorName,
   questionsForSectors,
   DEFAULT_SETTINGS,
+  localDate,
   type SurveySettings,
   type SurveySubmission,
   type SectorId,
@@ -48,6 +49,7 @@ export default function Survey({
   const [comment, setComment] = useState('');
   const [shift, setShift] = useState<Shift>('nao-informado');
   const [doctor, setDoctor] = useState('');
+  const [attendanceDate, setAttendanceDate] = useState('');
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -142,6 +144,7 @@ export default function Survey({
         comment: comment.trim(),
         shift,
         doctor: doctor.trim(),
+        ...(attendanceDate ? { attendanceDate } : {}),
         ...(lowRating && wantsContact && !localMode
           ? {
               contactRequest: {
@@ -437,8 +440,22 @@ export default function Survey({
                   <span className="character-count">{comment.length}/600</span>
                   <details className="extra-context">
                     <summary>Identificar o atendimento (opcional)</summary>
-                    <p>Use códigos fictícios para experimentar os filtros do painel.</p>
+                    <p>
+                      Informe apenas se souber. A data e o turno ajudam a localizar a equipe na
+                      escala; não identificam um profissional responsável. Use dados fictícios.
+                    </p>
                     <div className="field-grid">
+                      <label>
+                        Data do atendimento
+                        <input
+                          type="date"
+                          value={attendanceDate}
+                          max={localDate(new Date())}
+                          min="2000-01-01"
+                          onChange={(e) => setAttendanceDate(e.target.value)}
+                          disabled={saving}
+                        />
+                      </label>
                       <label>
                         Plantão
                         <select
@@ -447,8 +464,9 @@ export default function Survey({
                           disabled={saving}
                         >
                           <option value="nao-informado">Não sei informar</option>
-                          <option value="par">Par</option>
-                          <option value="impar">Ímpar</option>
+                          <option value="manha">Manhã</option>
+                          <option value="tarde">Tarde</option>
+                          <option value="noite">Noite</option>
                         </select>
                       </label>
                       <label>

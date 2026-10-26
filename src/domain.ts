@@ -8,7 +8,15 @@ export const SECTORS = [
 ] as const;
 export type SectorId = (typeof SECTORS)[number]['id'];
 export type QuestionSectorId = SectorId | 'geral';
-export type Shift = 'par' | 'impar' | 'nao-informado';
+export type Shift = 'par' | 'impar' | 'nao-informado' | 'manha' | 'tarde' | 'noite';
+export const SHIFT_LABELS: Record<Shift, string> = {
+  manha: 'Manhã',
+  tarde: 'Tarde',
+  noite: 'Noite',
+  par: 'Par (histórico)',
+  impar: 'Ímpar (histórico)',
+  'nao-informado': 'Não informado',
+};
 export type Question = { id: string; sectorId: QuestionSectorId; text: string; version: number };
 export type Answer = {
   questionId: string;
@@ -26,8 +34,17 @@ export type SurveyResponse = {
   comment: string;
   shift: Shift;
   doctor: string;
+  attendanceDate?: string;
+  teams?: { sectorId: SectorId; name: string; scheduleVersion: number }[];
 };
-export type Filters = { sectorId: string; shift: string; doctor: string; from: string; to: string };
+export type Filters = {
+  sectorId: string;
+  shift: string;
+  doctor: string;
+  from: string;
+  to: string;
+  team?: string;
+};
 export type SurveySettings = {
   version: number;
   contactPrompt: string;
@@ -141,6 +158,12 @@ export function filterResponses(responses: SurveyResponse[], filters: Filters) {
         (!filters.sectorId || r.sectorIds.includes(filters.sectorId as SectorId)) &&
         (!filters.shift || r.shift === filters.shift) &&
         (!filters.doctor || r.doctor === filters.doctor) &&
+        (!filters.team ||
+          r.teams?.some(
+            (team) =>
+              team.name === filters.team &&
+              (!filters.sectorId || team.sectorId === filters.sectorId),
+          )) &&
         (!filters.from || day >= filters.from) &&
         (!filters.to || day <= filters.to)
       );

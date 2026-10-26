@@ -1,0 +1,71 @@
+.survey-links-page .sector-link-list article {
+  gap: 24px;
+}
+
+.survey-links-page .sector-link-info input {
+  width: 100%;
+}
+
+.survey-links-page .link-actions {
+  flex-direction: row;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+.survey-links-page .sector-qr {
+  display: flex;
+  flex: 0 0 144px;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.survey-links-page .sector-qr img {
+  display: block;
+  width: 144px;
+  height: 144px;
+}
+
+.survey-links-page .qr-download {
+  width: 100%;
+}
+
+.survey-links-page .qr-placeholder {
+  display: grid;
+  width: 144px;
+  min-height: 196px;
+  place-content: center;
+  padding: 12px;
+  color: var(--muted);
+  background: var(--background);
+  text-align: center;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+
+.survey-links-page .qr-error {
+  margin-bottom: 20px;
+}
+
+.survey-links-page .qr-error .error-message {
+  margin-bottom: 10px;
+}
+
+@media (max-width: 620px) {
+  .survey-links-page .sector-link-list article {
+    gap: 18px;
+  }
+
+  .survey-links-page .sector-qr {
+    flex-basis: 100%;
+  }
+
+  .survey-links-page .qr-download {
+    width: auto;
+    min-width: 144px;
+  }
+
+  .survey-links-page .link-actions > * {
+    flex: 1 1 150px;
+  }
+}

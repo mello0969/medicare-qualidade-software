@@ -9,7 +9,7 @@ import type {
   ContactStatus,
 } from './domain';
 
-export type UserRole = 'manager' | 'sector-admin';
+export type UserRole = 'manager' | 'sector-admin' | 'management' | 'ombudsman' | 'viewer';
 export type User = {
   id: string;
   name: string;

@@ -27,9 +27,15 @@ test('pesquisa utilizável em 320px e com fonte ampliada', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 720 });
   await page.goto('/#/pesquisa/triagem');
   await page.getByRole('button', { name: 'Começar pesquisa' }).click();
-  await page.evaluate(() => {
+  await page.evaluate(async () => {
+    await document.fonts.ready;
     document.documentElement.style.fontSize = '200%';
+    await new Promise<void>((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+    );
   });
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await expect
+    .poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
+    .toBe(true);
   await expect(page.getByRole('button', { name: 'Continuar' })).toBeVisible();
 });

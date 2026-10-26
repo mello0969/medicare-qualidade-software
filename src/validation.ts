@@ -1,4 +1,5 @@
-import { isSector, type Question, type SurveyResponse } from './domain.ts';
+import { isSector, SHIFT_LABELS, type Question, type SurveyResponse } from './domain.ts';
+import { validAttendanceDate } from './schedules.ts';
 
 const object = (value: unknown): value is Record<string, unknown> =>
   value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -25,7 +26,19 @@ export function validResponse(value: unknown): value is SurveyResponse {
     !text(comment, 600) ||
     !text(doctor, 40) ||
     typeof shift !== 'string' ||
-    !['par', 'impar', 'nao-informado'].includes(shift)
+    !Object.hasOwn(SHIFT_LABELS, shift) ||
+    (value.attendanceDate !== undefined && !validAttendanceDate(value.attendanceDate)) ||
+    (value.teams !== undefined &&
+      (!Array.isArray(value.teams) ||
+        value.teams.length > 6 ||
+        !value.teams.every(
+          (team) =>
+            object(team) &&
+            isSector(team.sectorId) &&
+            sectorIds.includes(team.sectorId) &&
+            text(team.name, 80, 2) &&
+            integer(team.scheduleVersion, 1, 1_000_000),
+        )))
   )
     return false;
   return (

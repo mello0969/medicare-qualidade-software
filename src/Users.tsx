@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { ShieldCheck, Users, CheckCircle } from '@phosphor-icons/react';
 import { useAuth } from './Auth';
 import { createUser, getUsers, type User, type UserRole } from './api';
+import { ROLE_DESCRIPTIONS, ROLE_LABELS } from './access';
 import { SECTORS, sectorName, type SectorId } from './domain';
 
 export default function UsersPage() {
@@ -38,14 +39,14 @@ export default function UsersPage() {
     return () => {
       active = false;
     };
-  }, [user?.id, reload]);
+  }, [user?.id, user?.role, reload]);
   useEffect(() => {
     if (error) errorNode.current?.focus();
   }, [error]);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (busy.current) return;
+    if (user?.role !== 'manager' || busy.current) return;
     busy.current = true;
     setSaving(true);
     setError('');
@@ -57,7 +58,7 @@ export default function UsersPage() {
           email: email.trim(),
           password,
           role,
-          sectorId: role === 'manager' ? null : sectorId,
+          sectorId: role === 'sector-admin' ? sectorId : null,
         },
         csrfToken ?? '',
       );
@@ -79,8 +80,8 @@ export default function UsersPage() {
     return (
       <div className="empty-state">
         <ShieldCheck size={40} aria-hidden="true" />
-        <h1>Acessos são administrados pela gestão.</h1>
-        <p>Esta área é exclusiva para contas de gestor.</p>
+        <h1>Acessos são administrados pelo Super Admin.</h1>
+        <p>Somente o perfil Super Admin pode cadastrar e consultar contas da equipe.</p>
         <a className="button primary" href={user ? '#/painel?dados=servidor' : '#/login'}>
           {user ? 'Voltar ao painel' : 'Entrar na gestão'}
         </a>
@@ -92,7 +93,7 @@ export default function UsersPage() {
       <div className="page-heading">
         <div>
           <h1>Acessos da equipe</h1>
-          <p>Defina quem acompanha todos os setores e quem cuida de um setor.</p>
+          <p>Defina as permissões de cada pessoa entre os cinco perfis da equipe.</p>
         </div>
         <Users size={30} aria-hidden="true" />
       </div>
@@ -122,9 +123,8 @@ export default function UsersPage() {
                 <h3>{account.name}</h3>
                 <p>{account.email}</p>
                 <span className="badge">
-                  {account.role === 'manager'
-                    ? 'Administrador · acesso total'
-                    : `Gestor · ${sectorName(account.sectorId ?? '')}`}
+                  {ROLE_LABELS[account.role]}
+                  {account.role === 'sector-admin' && ` · ${sectorName(account.sectorId ?? '')}`}
                 </span>
               </div>
             </article>
@@ -191,11 +191,18 @@ export default function UsersPage() {
                 value={role}
                 onChange={(e) => setRole(e.target.value as UserRole)}
                 disabled={saving}
+                aria-describedby="role-help"
               >
-                <option value="sector-admin">Gestor de setor</option>
-                <option value="manager">Administrador com acesso total</option>
+                {(Object.keys(ROLE_LABELS) as UserRole[]).map((value) => (
+                  <option key={value} value={value}>
+                    {ROLE_LABELS[value]}
+                  </option>
+                ))}
               </select>
             </label>
+            <p className="small muted" id="role-help">
+              {ROLE_DESCRIPTIONS[role]}
+            </p>
             {role === 'sector-admin' && (
               <label htmlFor="user-sector">
                 Setor permitido

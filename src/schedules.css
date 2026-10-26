@@ -1,0 +1,110 @@
+.schedules-page .schedules-context {
+  max-width: 75ch;
+  color: var(--muted);
+  line-height: 1.75;
+  margin: 0 0 24px;
+}
+.schedules-page .schedule-toolbar {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.schedules-page .schedule-toolbar label {
+  display: grid;
+  gap: 8px;
+  max-width: 240px;
+  width: 100%;
+}
+.schedules-page > .error-message,
+.schedules-page > .status-message {
+  margin-bottom: 24px;
+}
+.schedules-page .schedules-layout {
+  display: grid;
+  grid-template-columns: minmax(240px, 320px) minmax(0, 1fr);
+  align-items: start;
+  gap: 24px;
+}
+.schedules-page .schedules-readonly {
+  grid-template-columns: minmax(0, 1fr);
+}
+.schedules-page .schedule-editor h2 {
+  margin-bottom: 24px;
+}
+.schedules-page .schedule-editor fieldset {
+  border: 0;
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+}
+.schedules-page .schedule-editor label {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.schedules-page .schedule-editor .button {
+  justify-self: start;
+}
+.schedules-page .schedule-scroll-hint {
+  margin-bottom: 12px;
+}
+.schedules-page .schedule-table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  scrollbar-color: #c3a6ad #f7f1f2;
+}
+.schedules-page .schedule-table-wrap table {
+  min-width: 560px;
+  font-size: 0.875rem;
+}
+.schedules-page .schedule-table-wrap th,
+.schedules-page .schedule-table-wrap td {
+  vertical-align: top;
+  padding: 12px 10px;
+}
+.schedules-page .schedule-table-wrap time {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.schedules-page .schedule-team-cell {
+  min-width: 120px;
+  max-width: 240px;
+  overflow-wrap: anywhere;
+}
+.schedules-page .schedule-table-wrap .text-button {
+  min-height: 44px;
+}
+@media (max-width: 1000px) {
+  .schedules-page .schedules-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .schedules-page .schedule-editor fieldset {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .schedules-page .schedule-editor fieldset > p,
+  .schedules-page .schedule-editor fieldset > button {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 620px) {
+  .schedules-page .schedule-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .schedules-page .schedule-toolbar label {
+    max-width: none;
+  }
+  .schedules-page .schedule-toolbar .button {
+    align-self: flex-start;
+  }
+  .schedules-page .schedule-editor fieldset {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .schedules-page .schedule-editor input,
+  .schedules-page .schedule-editor select {
+    font-size: 1rem;
+  }
+}

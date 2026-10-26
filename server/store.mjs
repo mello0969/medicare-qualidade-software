@@ -12,9 +12,15 @@ import {
 import { promisify } from 'node:util';
 import { DEFAULT_QUESTIONS, isSector } from '../src/domain.ts';
 import { initializeExperience, recordContact } from './experience.mjs';
+import { initializeSchedules, resolveScheduleTeams, publicSurveySchedule } from './schedules.mjs';
 
 const deriveKey = promisify(scrypt);
 const scryptOptions = { N: 32768, r: 8, p: 1, maxmem: 64 * 1024 * 1024 };
+export async function hashPassword(password) {
+  const salt = randomBytes(16).toString('hex');
+  const hash = (await deriveKey(password, salt, 64, scryptOptions)).toString('hex');
+  return { salt, hash };
+}
 export const tokenHash = (token) => createHash('sha256').update(token).digest('hex');
 export const publicUser = (user) => ({
   id: user.id,
@@ -51,8 +57,10 @@ export function openDatabase(dbPath = 'data/medicare.sqlite') {
       payload_hash TEXT NOT NULL,
       nps INTEGER CHECK (nps IS NULL OR nps BETWEEN 0 AND 10),
       comment TEXT NOT NULL,
-      shift TEXT NOT NULL CHECK (shift IN ('par', 'impar', 'nao-informado')),
-      doctor TEXT NOT NULL
+      shift TEXT NOT NULL CHECK (shift IN ('par', 'impar', 'nao-informado', 'manha', 'tarde', 'noite')),
+      doctor TEXT NOT NULL,
+      attendance_date TEXT,
+      teams_json TEXT NOT NULL DEFAULT '[]'
     ) STRICT;
     CREATE TABLE IF NOT EXISTS survey_sectors (
       survey_id TEXT NOT NULL REFERENCES surveys(id) ON DELETE CASCADE,
@@ -72,13 +80,13 @@ export function openDatabase(dbPath = 'data/medicare.sqlite') {
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       email TEXT NOT NULL UNIQUE COLLATE NOCASE,
-      role TEXT NOT NULL CHECK (role IN ('manager', 'sector-admin')),
+      role TEXT NOT NULL CHECK (role IN ('manager', 'sector-admin', 'management', 'ombudsman', 'viewer')),
       sector_id TEXT,
       password_salt TEXT NOT NULL,
       password_hash TEXT NOT NULL,
       created_at TEXT NOT NULL,
       must_change_password INTEGER NOT NULL DEFAULT 0 CHECK (must_change_password IN (0, 1)),
-      CHECK ((role = 'manager' AND sector_id IS NULL) OR (role = 'sector-admin' AND sector_id IS NOT NULL))
+      CHECK ((role IN ('manager', 'management', 'ombudsman', 'viewer') AND sector_id IS NULL) OR (role = 'sector-admin' AND sector_id IS NOT NULL))
     ) STRICT;
     CREATE TABLE IF NOT EXISTS sessions (
       token_hash TEXT PRIMARY KEY,
@@ -130,6 +138,31 @@ export function openDatabase(dbPath = 'data/medicare.sqlite') {
     }
     db.prepare('INSERT OR IGNORE INTO schema_version VALUES (?)').run(3);
   });
+  const userSchema = db.prepare("SELECT sql FROM sqlite_master WHERE name = 'users'").get();
+  if (!userSchema.sql.includes("'management'")) {
+    // Rebuild only users; the original table name keeps all existing foreign-key references.
+    db.exec('PRAGMA foreign_keys = OFF');
+    try {
+      transaction(db, () => {
+        db.exec(`CREATE TABLE users_roles (
+          id TEXT PRIMARY KEY, name TEXT NOT NULL, email TEXT NOT NULL UNIQUE COLLATE NOCASE,
+          role TEXT NOT NULL CHECK (role IN ('manager','sector-admin','management','ombudsman','viewer')),
+          sector_id TEXT, password_salt TEXT NOT NULL, password_hash TEXT NOT NULL, created_at TEXT NOT NULL,
+          must_change_password INTEGER NOT NULL DEFAULT 0 CHECK (must_change_password IN (0,1)),
+          CHECK ((role IN ('manager','management','ombudsman','viewer') AND sector_id IS NULL)
+            OR (role='sector-admin' AND sector_id IS NOT NULL))
+        ) STRICT;
+        INSERT INTO users_roles SELECT id,name,email,role,sector_id,password_salt,password_hash,created_at,must_change_password FROM users;
+        DROP TABLE users;
+        ALTER TABLE users_roles RENAME TO users;`);
+        if (db.prepare('PRAGMA foreign_key_check').all().length)
+          throw new Error('INVALID_MIGRATION');
+      });
+    } finally {
+      db.exec('PRAGMA foreign_keys = ON');
+    }
+  }
+  db.prepare('INSERT OR IGNORE INTO schema_version VALUES (?)').run(5);
   transaction(db, () => {
     const addQuestion = db.prepare('INSERT OR IGNORE INTO questions VALUES (?, ?, ?)');
     const addVersion = db.prepare('INSERT OR IGNORE INTO question_versions VALUES (?, ?, ?, ?)');
@@ -139,6 +172,7 @@ export function openDatabase(dbPath = 'data/medicare.sqlite') {
     }
   });
   initializeExperience(db);
+  initializeSchedules(db);
   return db;
 }
 
@@ -184,7 +218,8 @@ export function userInputValid(input) {
     input.password.length >= 12 &&
     input.password.length <= 128 &&
     (input.mustChangePassword === undefined || typeof input.mustChangePassword === 'boolean') &&
-    ((input.role === 'manager' && input.sectorId === null) ||
+    ((['manager', 'management', 'ombudsman', 'viewer'].includes(input.role) &&
+      input.sectorId === null) ||
       (input.role === 'sector-admin' && isSector(input.sectorId)))
   );
 }
@@ -320,6 +355,8 @@ export function responseHash(response) {
     shift: response.shift,
     doctor: response.doctor,
   };
+  // Omission keeps hashes of historical submissions unchanged after the migration.
+  if (response.attendanceDate !== undefined) canonical.attendanceDate = response.attendanceDate;
   if (response.contactRequest) {
     const contact = response.contactRequest;
     canonical.contactRequest = {
@@ -357,7 +394,12 @@ export function saveSurvey(db, response, createdAt) {
       )
         throw new Error('INVALID_QUESTION_SNAPSHOT');
     }
-    db.prepare('INSERT INTO surveys VALUES (?, ?, ?, ?, ?, ?, ?)').run(
+    const teams = resolveScheduleTeams(db, response);
+    db.prepare(
+      `INSERT INTO surveys
+      (id,created_at,payload_hash,nps,comment,shift,doctor,attendance_date,teams_json)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).run(
       response.id,
       createdAt,
       hash,
@@ -365,6 +407,8 @@ export function saveSurvey(db, response, createdAt) {
       response.comment,
       response.shift,
       response.doctor,
+      response.attendanceDate ?? null,
+      JSON.stringify(teams),
     );
     const addSector = db.prepare('INSERT INTO survey_sectors VALUES (?, ?)');
     for (const sector of response.sectorIds) addSector.run(response.id, sector);
@@ -409,9 +453,10 @@ export function listSurveys(db, user) {
       .filter((answer) => !scoped || answer.sectorId === user.sectorId),
     nps: row.nps,
     // An unstructured comment may describe other departments; only the hospital manager can read it.
-    comment: scoped ? '' : row.comment,
+    comment: user.role === 'manager' ? row.comment : '',
     shift: row.shift,
     doctor: scoped && user.sectorId !== 'medico' ? '' : row.doctor,
+    ...publicSurveySchedule(row, user),
   }));
 }
 

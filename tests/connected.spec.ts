@@ -100,7 +100,7 @@ test.describe('pesquisa compartilhada e administração', () => {
     expect(editorAllowed).toEqual(['triagem']);
     await page.goto('/#/usuarios');
     await expect(
-      page.getByRole('heading', { name: 'Acessos são administrados pela gestão.' }),
+      page.getByRole('heading', { name: 'Seu perfil não tem acesso a esta área.' }),
     ).toBeVisible();
     await expect(page.getByRole('button', { name: 'Criar acesso', exact: true })).toHaveCount(0);
   });
@@ -111,6 +111,7 @@ test.describe('pesquisa compartilhada e administração', () => {
   }) => {
     await page.goto('/#/pesquisa/recepcao');
     await page.getByRole('button', { name: 'Começar pesquisa' }).click();
+    await expect(page.getByRole('group', { name: 'Nota de 1 a 5', exact: true })).toBeVisible();
     const oldText = await page.getByRole('heading', { level: 1 }).innerText();
     const questions = (await (await page.request.get('/api/questions')).json())
       .questions as Question[];

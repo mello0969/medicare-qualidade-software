@@ -1,4 +1,10 @@
-import { calculateMetrics, sectorName, type Filters, type SurveyResponse } from './domain';
+import {
+  calculateMetrics,
+  sectorName,
+  SHIFT_LABELS,
+  type Filters,
+  type SurveyResponse,
+} from './domain';
 
 export async function createWorkbook(responses: SurveyResponse[], mode: string, filters: Filters) {
   const { Workbook } = await import('exceljs');
@@ -13,6 +19,7 @@ export async function createWorkbook(responses: SurveyResponse[], mode: string, 
     ['Setor', filters.sectorId ? sectorName(filters.sectorId) : 'Todos'],
     ['Plantão', filters.shift || 'Todos'],
     ['Profissional', filters.doctor || 'Todos'],
+    ['Equipe da escala', filters.team || 'Todas'],
     ['Data inicial', filters.from || 'Sem limite'],
     ['Data final', filters.to || 'Sem limite'],
     ['Respostas', metrics.total],
@@ -26,16 +33,32 @@ export async function createWorkbook(responses: SurveyResponse[], mode: string, 
     ['Limite', 'Protótipo acadêmico; sem integração com os sistemas da FHDOD.'],
   ]);
   const sheet = book.addWorksheet('Respostas');
-  sheet.addRow(['ID', 'Data ISO', 'Setores', 'NPS', 'Plantão', 'Profissional', 'Comentário']);
+  sheet.addRow([
+    'ID',
+    'Data de envio ISO',
+    'Setores',
+    'NPS',
+    'Plantão',
+    'Código informado',
+    'Comentário',
+    'Data do atendimento',
+    'Equipes da escala',
+  ]);
   responses.forEach((r) =>
     sheet.addRow([
       r.id,
       r.createdAt,
       r.sectorIds.map(sectorName).join(', '),
       r.nps,
-      r.shift,
+      SHIFT_LABELS[r.shift],
       r.doctor || 'Não informado',
       r.comment,
+      r.attendanceDate ?? 'Não informada',
+      r.teams
+        ?.map(
+          (team) => `${sectorName(team.sectorId)}: ${team.name} (escala v${team.scheduleVersion})`,
+        )
+        .join('; ') || 'Não identificadas',
     ]),
   );
   const answers = book.addWorksheet('Avaliações');
@@ -48,7 +71,7 @@ export async function createWorkbook(responses: SurveyResponse[], mode: string, 
   for (const ws of book.worksheets) {
     ws.views = [{ state: 'frozen', ySplit: 1 }];
     ws.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
-    ws.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF153E38' } };
+    ws.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF571C26' } };
     ws.columns.forEach((col, i) => {
       col.width = i === 0 ? 38 : 28;
     });

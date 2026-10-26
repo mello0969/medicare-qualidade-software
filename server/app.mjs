@@ -1,28 +1,11 @@
 import { createServer as createHttpServer } from 'node:http';
 import { timingSafeEqual } from 'node:crypto';
+import { isIP } from 'node:net';
 import { validQuestions, validResponse } from '../src/validation.ts';
-import {
-  createSession,
-  createUser,
-  changePassword,
-  createQuestion,
-  listQuestions,
-  listSurveys,
-  openDatabase,
-  readSession,
-  saveSurvey,
-  tokenHash,
-  transaction,
-  updateQuestions,
-  verifyPassword,
-} from './store.mjs';
-import {
-  listContacts,
-  readSettings,
-  updateContactStatus,
-  updateSettings,
-  validContactRequest,
-} from './experience.mjs';
+import { buildWallSummary } from '../src/wall.ts';
+import { createRepository } from './repository.mjs';
+import { validContactRequest } from './experience.mjs';
+import { validAttendanceDate, todayInBrazil } from './schedules.mjs';
 
 const COOKIE = 'medicare_session';
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -76,47 +59,35 @@ async function readBody(req, limit = 32 * 1024) {
   }
 }
 
-function createLimiter(now, windowMs) {
-  const buckets = new Map();
-  return (key, limit, res) => {
-    const time = now();
-    // Bounded lifetime and count: unused attacker-provided addresses cannot accumulate indefinitely.
-    for (const [entryKey, entry] of buckets) if (entry.until <= time) buckets.delete(entryKey);
-    if (!buckets.has(key) && buckets.size >= 10000)
-      throw new RequestError(
-        429,
-        'RATE_LIMIT',
-        'Muitos acessos. Aguarde alguns minutos e tente novamente.',
-      );
-    const bucket = buckets.get(key) ?? { count: 0, until: time + windowMs };
-    bucket.count += 1;
-    buckets.set(key, bucket);
-    if (bucket.count > limit) {
-      res.setHeader('Retry-After', String(Math.max(1, Math.ceil((bucket.until - time) / 1000))));
-      throw new RequestError(
-        429,
-        'RATE_LIMIT',
-        'Muitas tentativas. Aguarde alguns minutos e tente novamente.',
-      );
-    }
-  };
+export function clientAddress(req, trustVercel = process.env.VERCEL === '1') {
+  // Vercel overwrites this platform-owned header. Arbitrary X-Forwarded-For is never trusted.
+  const platformIp = req.headers['x-vercel-forwarded-for'];
+  if (trustVercel && typeof platformIp === 'string' && isIP(platformIp)) return platformIp;
+  return req.socket?.remoteAddress ?? 'unknown';
 }
 
-export function createServer({
-  dbPath = process.env.MEDICARE_DB_PATH ?? 'data/medicare.sqlite',
-  origin = process.env.APP_ORIGIN ?? 'http://127.0.0.1:5173',
-  secureCookies = origin.startsWith('https://') || process.env.MEDICARE_SECURE_COOKIES === 'true',
-  sessionTtlMs = 8 * 60 * 60 * 1000,
-  loginLimit = 10,
-  responseLimit = 60,
-  rateWindowMs = 15 * 60 * 1000,
-  now = Date.now,
-} = {}) {
+export function createHandler(options = {}) {
+  const {
+    dbPath = process.env.MEDICARE_DB_PATH ?? 'data/medicare.sqlite',
+    // Explicit temporary dbPath fixtures must never inherit a production database URL.
+    databaseUrl = Object.hasOwn(options, 'dbPath') ? '' : process.env.DATABASE_URL,
+    repository,
+    origin = process.env.APP_ORIGIN ?? 'http://127.0.0.1:5173',
+    secureCookies = origin.startsWith('https://') || process.env.MEDICARE_SECURE_COOKIES === 'true',
+    sessionTtlMs = 8 * 60 * 60 * 1000,
+    loginLimit = 10,
+    responseLimit = 60,
+    rateWindowMs = 15 * 60 * 1000,
+    now = Date.now,
+    trustVercel = process.env.VERCEL === '1',
+  } = options;
   const configured = new URL(origin);
   if (configured.origin !== origin || !['http:', 'https:'].includes(configured.protocol))
     throw new Error('APP_ORIGIN deve conter apenas protocolo, domínio e porta, sem caminho.');
-  const db = openDatabase(dbPath);
-  const limit = createLimiter(now, rateWindowMs);
+  const initialRepository = repository ?? createRepository({ dbPath, databaseUrl });
+  const initPromise = Promise.resolve(initialRepository);
+  // Initialization errors are reported by each request, without an unhandled rejection.
+  initPromise.catch(() => {});
   const sessionEnvelope = (session) => session ?? { user: null, csrfToken: null };
   const writeSessionCookie = (res, token, maxAge) =>
     res.setHeader(
@@ -124,11 +95,24 @@ export function createServer({
       `${COOKIE}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${secureCookies ? '; Secure' : ''}`,
     );
 
-  const server = createHttpServer(async (req, res) => {
+  const handler = async (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Referrer-Policy', 'same-origin');
     try {
+      const repo = await initPromise;
+      await repo.ready;
+      const limit = async (key, maximum) => {
+        const result = await repo.consumeRate(key, maximum, rateWindowMs, now());
+        if (!result.allowed) {
+          res.setHeader('Retry-After', String(result.retryAfter));
+          throw new RequestError(
+            429,
+            'RATE_LIMIT',
+            'Muitas tentativas. Aguarde alguns minutos e tente novamente.',
+          );
+        }
+      };
       const path = new URL(req.url, origin).pathname;
       const method = req.method;
       const mutation = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
@@ -140,7 +124,7 @@ export function createServer({
           'A origem desta solicitação não está autorizada.',
         );
       const token = cookies(req)[COOKIE];
-      const session = readSession(db, token, now());
+      const session = await repo.readSession(token, now());
       const requireSession = () => {
         if (!session)
           throw new RequestError(401, 'AUTH_REQUIRED', 'Entre na sua conta para continuar.');
@@ -176,18 +160,47 @@ export function createServer({
           );
         return logged;
       };
-      const ip = req.socket.remoteAddress ?? 'unknown';
+      const requireRole = (roles, csrf = false) => {
+        const logged = csrf ? requireCsrf() : requirePasswordChanged(requireSession());
+        if (!roles.includes(logged.user.role))
+          throw new RequestError(
+            403,
+            'ROLE_REQUIRED',
+            'Sua conta não tem permissão para esta ação.',
+          );
+        return logged;
+      };
+      const ip = clientAddress(req, trustVercel);
 
       if (method === 'GET' && path === '/api/health') return reply(res, 200, { ok: true });
       if (method === 'GET' && path === '/api/questions')
-        return reply(res, 200, { questions: listQuestions(db) });
+        return reply(res, 200, { questions: await repo.listQuestions() });
       if (method === 'GET' && path === '/api/settings')
-        return reply(res, 200, { settings: readSettings(db) });
+        return reply(res, 200, { settings: await repo.readSettings() });
+      if (method === 'GET' && path === '/api/wall') {
+        const responses = await repo.listSurveys({ role: 'manager' });
+        return reply(res, 200, { summary: buildWallSummary(responses, new Date(now())) });
+      }
       if (method === 'GET' && path === '/api/auth/session')
         return reply(res, 200, sessionEnvelope(session));
+      if (method === 'GET' && path === '/api/schedules') {
+        const logged = requireRole(['manager', 'sector-admin', 'management']);
+        const month = new URL(req.url, origin).searchParams.get('month');
+        return reply(res, 200, { schedules: await repo.listSchedules(month, logged.user) });
+      }
+      if (method === 'PUT' && path === '/api/schedules') {
+        const logged = requireRole(['manager', 'sector-admin'], true);
+        const body = await readBody(req);
+        const schedule = await repo.updateSchedule(
+          body,
+          logged.user,
+          new Date(now()).toISOString(),
+        );
+        return reply(res, 200, { schedule });
+      }
 
       if (method === 'POST' && path === '/api/auth/login') {
-        limit(`login:${ip}`, loginLimit, res);
+        await limit(`login:${ip}`, loginLimit);
         const body = await readBody(req);
         if (
           !exactKeys(body, ['email', 'password']) ||
@@ -197,35 +210,27 @@ export function createServer({
           body.password.length > 128
         )
           throw new RequestError(400, 'INVALID_LOGIN', 'Informe seu e-mail e sua senha.');
-        const user = db
-          .prepare('SELECT * FROM users WHERE email = ?')
-          .get(body.email.trim().toLowerCase());
-        if (!(await verifyPassword(body.password, user)))
-          throw new RequestError(401, 'INVALID_CREDENTIALS', 'E-mail ou senha incorretos.');
-        const created = transaction(db, () => {
-          // Password verification is asynchronous; an old password cannot authenticate after a change.
-          const current = db.prepare('SELECT password_hash FROM users WHERE id = ?').get(user.id);
-          if (current?.password_hash !== user.password_hash)
-            throw new RequestError(401, 'INVALID_CREDENTIALS', 'E-mail ou senha incorretos.');
-          // Regenerate the session when authenticating; the previous browser session is revoked.
-          db.prepare('DELETE FROM sessions WHERE expires_at <= ?').run(now());
-          if (token) db.prepare('DELETE FROM sessions WHERE token_hash = ?').run(tokenHash(token));
-          return createSession(db, user.id, now() + sessionTtlMs);
+        const created = await repo.authenticate({
+          email: body.email.trim().toLowerCase(),
+          password: body.password,
+          previousToken: token,
+          now: now(),
+          expiresAt: now() + sessionTtlMs,
         });
         writeSessionCookie(res, created.token, Math.floor(sessionTtlMs / 1000));
-        return reply(res, 200, readSession(db, created.token, now()));
+        return reply(res, 200, await repo.readSession(created.token, now()));
       }
 
       if (method === 'POST' && path === '/api/auth/logout') {
         requireCsrf(true);
-        db.prepare('DELETE FROM sessions WHERE token_hash = ?').run(tokenHash(token));
+        await repo.revokeSession(token);
         writeSessionCookie(res, '', 0);
         return reply(res, 204);
       }
 
       if (method === 'POST' && path === '/api/auth/password') {
         const logged = requireCsrf(true);
-        limit(`password:${ip}:${logged.user.id}`, 5, res);
+        await limit(`password:${ip}:${logged.user.id}`, 5);
         const body = await readBody(req);
         if (
           !exactKeys(body, ['currentPassword', 'newPassword']) ||
@@ -247,7 +252,7 @@ export function createServer({
             'UNCHANGED_PASSWORD',
             'Escolha uma senha diferente da senha atual.',
           );
-        const created = await changePassword(db, {
+        const created = await repo.changePassword({
           userId: logged.user.id,
           currentPassword: body.currentPassword,
           newPassword: body.newPassword,
@@ -256,12 +261,12 @@ export function createServer({
           now,
         });
         writeSessionCookie(res, created.token, Math.floor(sessionTtlMs / 1000));
-        return reply(res, 200, readSession(db, created.token, now()));
+        return reply(res, 200, await repo.readSession(created.token, now()));
       }
 
       if (method === 'POST' && path === '/api/responses') {
         if (session) requirePasswordChanged(session);
-        limit(`response:${ip}`, responseLimit, res);
+        await limit(`response:${ip}`, responseLimit);
         const body = await readBody(req);
         const valid =
           validResponse(body) &&
@@ -270,6 +275,9 @@ export function createServer({
           body.nps >= 0 &&
           body.nps <= 10 &&
           typeof body.shift === 'string' &&
+          (body.attendanceDate === undefined ||
+            (validAttendanceDate(body.attendanceDate) &&
+              body.attendanceDate <= todayInBrazil(now()))) &&
           exactKeys(body, [
             'id',
             'createdAt',
@@ -280,6 +288,7 @@ export function createServer({
             'shift',
             'doctor',
             'contactRequest',
+            'attendanceDate',
           ]) &&
           body.answers.every((answer) =>
             exactKeys(answer, [
@@ -294,7 +303,7 @@ export function createServer({
             validContactRequest(body.contactRequest, body.answers));
         if (!valid)
           throw new RequestError(400, 'INVALID_RESPONSE', 'Revise as respostas antes de enviar.');
-        const saved = saveSurvey(db, body, new Date(now()).toISOString());
+        const saved = await repo.saveSurvey(body, new Date(now()).toISOString());
         return reply(res, saved.duplicate ? 200 : 201, {
           id: saved.id,
           createdAt: saved.createdAt,
@@ -302,12 +311,12 @@ export function createServer({
       }
 
       if (method === 'GET' && path === '/api/responses') {
-        const logged = requirePasswordChanged(requireSession());
-        return reply(res, 200, { responses: listSurveys(db, logged.user) });
+        const logged = requireRole(['manager', 'sector-admin', 'management']);
+        return reply(res, 200, { responses: await repo.listSurveys(logged.user) });
       }
 
       if (method === 'PUT' && path === '/api/questions') {
-        const logged = requireCsrf();
+        const logged = requireRole(['manager', 'sector-admin'], true);
         const body = await readBody(req);
         if (
           !exactKeys(body, ['questions', 'expectedVersions']) ||
@@ -324,8 +333,7 @@ export function createServer({
             'INVALID_QUESTIONS',
             'Revise as perguntas e tente novamente.',
           );
-        const questions = updateQuestions(
-          db,
+        const questions = await repo.updateQuestions(
           body.questions,
           body.expectedVersions,
           logged.user,
@@ -335,10 +343,14 @@ export function createServer({
       }
 
       if (method === 'POST' && path === '/api/questions') {
-        const logged = requireCsrf();
+        const logged = requireRole(['manager', 'sector-admin'], true);
         const body = await readBody(req);
         if (!exactKeys(body, ['text', 'sectorId'])) throw new Error('INVALID_QUESTIONS');
-        const question = createQuestion(db, body, logged.user, new Date(now()).toISOString());
+        const question = await repo.createQuestion(
+          body,
+          logged.user,
+          new Date(now()).toISOString(),
+        );
         return reply(res, 201, { question });
       }
 
@@ -346,60 +358,47 @@ export function createServer({
         const logged = requireManager(true);
         const body = await readBody(req);
         if (!exactKeys(body, ['settings', 'expectedVersion'])) throw new Error('INVALID_SETTINGS');
-        const settings = transaction(db, () =>
-          updateSettings(
-            db,
-            body.settings,
-            body.expectedVersion,
-            logged.user.id,
-            new Date(now()).toISOString(),
-          ),
+        const settings = await repo.updateSettings(
+          body.settings,
+          body.expectedVersion,
+          logged.user.id,
+          new Date(now()).toISOString(),
         );
         return reply(res, 200, { settings });
       }
 
       if (method === 'GET' && path === '/api/admin/contacts') {
-        requireManager();
-        return reply(res, 200, { contacts: listContacts(db) });
+        requireRole(['manager', 'ombudsman']);
+        return reply(res, 200, { contacts: await repo.listContacts() });
       }
 
       const contactPath = /^\/api\/admin\/contacts\/([^/]+)$/.exec(path);
       if (method === 'PATCH' && contactPath) {
-        const logged = requireManager(true);
+        const logged = requireRole(['manager', 'ombudsman'], true);
         const body = await readBody(req);
         if (!exactKeys(body, ['status'])) throw new Error('INVALID_CONTACT_STATUS');
-        const contact = transaction(db, () =>
-          updateContactStatus(
-            db,
-            contactPath[1],
-            body.status,
-            logged.user.id,
-            new Date(now()).toISOString(),
-          ),
+        const contact = await repo.updateContactStatus(
+          contactPath[1],
+          body.status,
+          logged.user.id,
+          new Date(now()).toISOString(),
         );
         return reply(res, 200, { contact });
       }
 
       if (method === 'GET' && path === '/api/admin/users') {
         requireManager();
-        const users = db
-          .prepare(
-            `SELECT id, name, email, role, sector_id AS sectorId,
-          must_change_password AS mustChangePassword FROM users ORDER BY name`,
-          )
-          .all()
-          .map((user) => ({ ...user, mustChangePassword: Boolean(user.mustChangePassword) }));
+        const users = await repo.listUsers();
         return reply(res, 200, { users });
       }
 
       if (method === 'POST' && path === '/api/admin/users') {
         const logged = requireManager(true);
-        limit(`users:${ip}`, 20, res);
+        await limit(`users:${ip}`, 20);
         const body = await readBody(req);
         if (!exactKeys(body, ['name', 'email', 'password', 'role', 'sectorId']))
           throw new Error('INVALID_USER');
-        const user = await createUser(
-          db,
+        const user = await repo.createUser(
           { ...body, mustChangePassword: true },
           now(),
           logged.user.id,
@@ -411,6 +410,22 @@ export function createServer({
     } catch (error) {
       if (res.writableEnded || res.destroyed) return;
       const mapped = {
+        INVALID_SCHEDULE: [
+          400,
+          'INVALID_SCHEDULE',
+          'Revise o setor, a data, o turno e a equipe da escala.',
+        ],
+        INVALID_SCHEDULE_MONTH: [
+          400,
+          'INVALID_SCHEDULE_MONTH',
+          'Informe um mês válido no formato AAAA-MM.',
+        ],
+        SCHEDULE_CONFLICT: [
+          409,
+          'VERSION_CONFLICT',
+          'Esta escala foi alterada por outra pessoa. Recarregue antes de salvar.',
+        ],
+        INVALID_CREDENTIALS: [401, 'INVALID_CREDENTIALS', 'E-mail ou senha incorretos.'],
         ID_CONFLICT: [409, 'ID_CONFLICT', 'Este envio já existe com respostas diferentes.'],
         INVALID_QUESTION_SNAPSHOT: [
           400,
@@ -470,9 +485,17 @@ export function createServer({
         error: 'Não foi possível concluir. Tente novamente em instantes.',
       });
     }
-  });
+  };
+  handler.closeDatabase = () =>
+    initialRepository.then ? initPromise.then((repo) => repo.close()) : initialRepository.close();
+  return handler;
+}
+
+export function createServer(options = {}) {
+  const handler = createHandler(options);
+  const server = createHttpServer(handler);
   server.requestTimeout = 15_000;
   server.headersTimeout = 10_000;
-  server.closeDatabase = () => db.close();
+  server.closeDatabase = handler.closeDatabase;
   return server;
 }
