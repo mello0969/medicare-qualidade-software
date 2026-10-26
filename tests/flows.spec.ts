@@ -61,6 +61,37 @@ test('filtros, vazio, restauração e download Excel', async ({ page }) => {
   ).toBeVisible();
 });
 
+test('iniciar outra pesquisa não reutiliza a data do atendimento anterior', async ({ page }) => {
+  await page.goto('/#/pesquisa/triagem?modo=local');
+  await page.getByRole('button', { name: 'Começar pesquisa', exact: true }).click();
+  await skipUntilNps(page);
+  await page.getByRole('radio', { name: '8', exact: true }).check();
+  await page.getByRole('button', { name: 'Continuar', exact: true }).click();
+  await page.getByText('Identificar o atendimento (opcional)', { exact: true }).click();
+  await page.getByLabel('Data do atendimento', { exact: true }).fill('2000-01-15');
+  await confirmSurvey(page);
+
+  await page.getByRole('button', { name: 'Iniciar outra pesquisa', exact: true }).click();
+  await page.getByRole('button', { name: 'Começar pesquisa', exact: true }).click();
+  await skipUntilNps(page);
+  await page.getByRole('radio', { name: '10', exact: true }).check();
+  await page.getByRole('button', { name: 'Continuar', exact: true }).click();
+  await page.getByText('Identificar o atendimento (opcional)', { exact: true }).click();
+  await expect(page.getByLabel('Data do atendimento', { exact: true })).toHaveValue('');
+  await confirmSurvey(page);
+
+  const records = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem('medicare.responses.v1')!),
+  );
+  expect(records).toHaveLength(2);
+  expect(records.find((record: { nps: number }) => record.nps === 8).attendanceDate).toBe(
+    '2000-01-15',
+  );
+  expect(
+    records.find((record: { nps: number }) => record.nps === 10).attendanceDate,
+  ).toBeUndefined();
+});
+
 test('edição de perguntas preserva versão e é usada por novas pesquisas', async ({ page }) => {
   await page.goto('/#/perguntas?modo=local');
   await page

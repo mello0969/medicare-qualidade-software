@@ -269,6 +269,7 @@ export default function Survey({
                   setComment('');
                   setShift('nao-informado');
                   setDoctor('');
+                  setAttendanceDate('');
                   setWantsContact(false);
                   setConsent(false);
                   setContact({ name: '', phone: '', email: '', message: '' });
