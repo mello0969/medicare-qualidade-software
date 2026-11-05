@@ -21,6 +21,8 @@ async function audit(page: Page, route: string) {
 }
 
 test('login e áreas da gestão acessíveis em computador e celular', async ({ page }, testInfo) => {
+  // Este cenário executa seis auditorias e seis capturas em sequência.
+  test.slow();
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.emulateMedia({ reducedMotion: 'reduce' });

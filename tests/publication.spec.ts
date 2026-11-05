@@ -206,15 +206,18 @@ test.describe('QR Codes, TV Wall e permissões de publicação', () => {
     await page.clock.install();
     const summary = buildWallSummary(createDemoResponses());
     let requests = 0;
+    let failRefresh = false;
     await page.route('**/api/wall', (route) => {
       requests++;
-      return requests === 1
-        ? route.fulfill({ status: 200, json: { summary } })
-        : route.fulfill({ status: 503, json: { error: 'QA' } });
+      // Repetições da carga inicial funcionam; a falha começa depois da primeira exibição.
+      return failRefresh
+        ? route.fulfill({ status: 503, json: { error: 'QA' } })
+        : route.fulfill({ status: 200, json: { summary } });
     });
     await page.goto('/#/tv-wall');
     await expect(page.getByRole('status')).toContainText('Atualizado às');
     const firstTotal = await page.locator('.wall-metric-value').first().innerText();
+    failRefresh = true;
     await page.clock.fastForward(15000);
     await expect(page.getByRole('status')).toContainText('Dados sem atualização');
     await expect(page.locator('.wall-metric-value').first()).toHaveText(firstTotal);

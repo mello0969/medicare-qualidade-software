@@ -2,6 +2,7 @@ import { writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { openDatabase, createUser, createSession } from '../server/store.mjs';
+import { createServer } from '../server/app.mjs';
 import { QA_MANAGER, QA_SECTOR } from './credentials.ts';
 
 const directory = resolve(process.env.MEDICARE_E2E_DIRECTORY ?? '');
@@ -26,4 +27,12 @@ for (const [key, input] of [
 }
 writeFileSync(join(directory, 'sessions.json'), JSON.stringify(tokens));
 db.close();
-await import('../server/index.mjs');
+// Os cenários compartilham o IP do fixture; o limite de produção continua em 10.
+const server = createServer({ dbPath: process.env.MEDICARE_DB_PATH, loginLimit: 100 });
+server.listen(Number(process.env.PORT ?? 3002), process.env.HOST ?? '127.0.0.1');
+function shutdown() {
+  server.close(() => server.closeDatabase());
+  server.closeIdleConnections();
+}
+process.once('SIGINT', shutdown);
+process.once('SIGTERM', shutdown);

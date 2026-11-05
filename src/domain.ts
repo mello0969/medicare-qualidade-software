@@ -118,7 +118,9 @@ DEFAULT_QUESTIONS.push(
 );
 
 export const questionsForSectors = (questions: Question[], selected: SectorId[]) => [
-  ...questions.filter((q) => q.sectorId !== 'geral' && selected.includes(q.sectorId)),
+  ...SECTORS.flatMap((sector) =>
+    selected.includes(sector.id) ? questions.filter((q) => q.sectorId === sector.id) : [],
+  ),
   ...questions.filter((q) => q.sectorId === 'geral'),
 ];
 

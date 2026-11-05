@@ -794,8 +794,9 @@ function Dashboard({ requestedMode }: { requestedMode: string }) {
                 ))}
               {!filtered.some((r) => r.comment) && (
                 <p className="muted">
-                  {mode === 'server' && user?.role === 'sector-admin'
-                    ? 'Comentários gerais são consultados pela gestão.'
+                  {mode === 'server' &&
+                  (user?.role === 'sector-admin' || user?.role === 'management')
+                    ? 'Seu perfil não permite consultar comentários livres.'
                     : 'As respostas deste recorte ainda não têm comentários.'}
                 </p>
               )}

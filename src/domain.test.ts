@@ -4,7 +4,9 @@ import {
   createDemoResponses,
   EMPTY_FILTERS,
   filterResponses,
+  questionsForSectors,
   sectorSummary,
+  type Question,
   type SurveyResponse,
 } from './domain';
 import { validQuestions, validResponse } from './storage';
@@ -86,6 +88,26 @@ describe('Indicadores', () => {
   });
 });
 describe('Integridade dos dados', () => {
+  it('agrupa perguntas novas na jornada dos setores e mantém as gerais ao fim', () => {
+    const questions: Question[] = [
+      ...DEFAULT_QUESTIONS,
+      {
+        id: 'recepcao-retorno',
+        sectorId: 'recepcao',
+        text: 'Como foi a orientação no retorno à recepção?',
+        version: 1,
+      },
+    ];
+    expect(questionsForSectors(questions, ['medico', 'recepcao']).map((q) => q.id)).toEqual([
+      'recepcao-atendimento',
+      'recepcao-ambiente',
+      'recepcao-retorno',
+      'medico-atendimento',
+      'medico-ambiente',
+      'geral-informacoes',
+      'geral-organizacao',
+    ]);
+  });
   it('gera somente registros sintéticos válidos e distintos', () => {
     const data = createDemoResponses(new Date('2026-10-02T12:00:00Z'));
     expect(data.every(validResponse)).toBe(true);
