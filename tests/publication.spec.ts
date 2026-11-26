@@ -78,7 +78,7 @@ test.describe('QR Codes, TV Wall e permissões de publicação', () => {
       for await (const chunk of stream) chunks.push(Buffer.from(chunk));
       const png = Buffer.concat(chunks);
       expect(png.subarray(0, 8)).toEqual(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
-      expect(await decodeDownloadedQr(page, png)).toBe(expectedUrl);
+      expect(await decodeDownloadedQr(page, png)).toBe(expectedUrl + '?origem=qr');
     }
     await expectAccessible(page);
     await page.goto(`${origin}/#/pesquisa/recepcao`);

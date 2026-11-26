@@ -1,4 +1,11 @@
-import { isSector, SHIFT_LABELS, type Question, type SurveyResponse } from './domain.ts';
+import {
+  FEEDBACK,
+  ORIGINS,
+  isSector,
+  SHIFT_LABELS,
+  type Question,
+  type SurveyResponse,
+} from './domain.ts';
 import { validAttendanceDate } from './schedules.ts';
 
 const object = (value: unknown): value is Record<string, unknown> =>
@@ -23,6 +30,13 @@ export function validResponse(value: unknown): value is SurveyResponse {
     !Array.isArray(answers) ||
     answers.length > 60 ||
     !(nps === null || integer(nps, 0, 10)) ||
+    (value.feedback !== undefined &&
+      (typeof value.feedback !== 'string' || !Object.hasOwn(FEEDBACK, value.feedback))) ||
+    (value.origin !== undefined &&
+      (typeof value.origin !== 'string' || !Object.hasOwn(ORIGINS, value.origin))) ||
+    (value.questionnaire !== undefined &&
+      value.questionnaire !== 'geral' &&
+      !isSector(value.questionnaire)) ||
     !text(comment, 600) ||
     !text(doctor, 40) ||
     typeof shift !== 'string' ||

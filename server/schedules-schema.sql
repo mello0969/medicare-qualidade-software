@@ -36,3 +36,7 @@ BEGIN
   END LOOP;
 END $security$;
 INSERT INTO fhdod.schema_version VALUES (2) ON CONFLICT DO NOTHING;
+
+ALTER TABLE fhdod.surveys ADD COLUMN IF NOT EXISTS feedback text;
+ALTER TABLE fhdod.surveys ADD COLUMN IF NOT EXISTS origin text;
+ALTER TABLE fhdod.surveys ADD COLUMN IF NOT EXISTS questionnaire text;
