@@ -52,5 +52,9 @@ BEGIN
       );
     END IF;
   END LOOP;
+  GRANT SELECT (created_at, event) ON fhdod.account_audit TO fhdod_api;
+  GRANT SELECT (created_at) ON fhdod.question_audit TO fhdod_api;
+  GRANT SELECT (created_at) ON fhdod.schedule_audit TO fhdod_api;
+  GRANT SELECT (created_at) ON fhdod.contact_status_audit TO fhdod_api;
 END $access$;
 COMMIT;

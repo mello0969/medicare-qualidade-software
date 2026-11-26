@@ -1,3 +1,4 @@
+import { auditQuery } from './audit.mjs';
 import * as store from './store.mjs';
 import * as experience from './experience.mjs';
 import * as schedules from './schedules.mjs';
@@ -39,6 +40,7 @@ export function createSqliteRepository(dbPath) {
     listContacts: () => experience.listContacts(db),
     updateContactStatus: (...args) =>
       store.transaction(db, () => experience.updateContactStatus(db, ...args)),
+    listAudit: () => db.prepare(auditQuery()).all(),
     listUsers: () => db.prepare('SELECT * FROM users ORDER BY name').all().map(store.publicUser),
     createUser: (...args) => store.createUser(db, ...args),
     listSchedules: (...args) => schedules.listSchedules(db, ...args),
