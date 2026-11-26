@@ -16,7 +16,11 @@ export default defineConfig({
   fullyParallel: true,
   workers: 3,
   reporter: [['list'], ['./tests/cleanup-reporter.ts']],
-  use: { baseURL: origin, channel: 'chrome', trace: 'retain-on-failure' },
+  use: {
+    baseURL: origin,
+    channel: process.env.MEDICARE_BROWSER_CHANNEL || 'chrome',
+    trace: 'retain-on-failure',
+  },
   projects: [
     {
       name: 'desktop',
