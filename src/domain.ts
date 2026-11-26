@@ -56,6 +56,8 @@ export type Filters = {
   from: string;
   to: string;
   team?: string;
+  origin?: string;
+  questionnaire?: string;
 };
 export type SurveySettings = {
   version: number;
@@ -171,6 +173,8 @@ export function filterResponses(responses: SurveyResponse[], filters: Filters) {
       return (
         (!filters.sectorId || r.sectorIds.includes(filters.sectorId as SectorId)) &&
         (!filters.shift || r.shift === filters.shift) &&
+        (!filters.origin || (r.origin ?? 'desconhecida') === filters.origin) &&
+        (!filters.questionnaire || (r.questionnaire ?? 'desconhecida') === filters.questionnaire) &&
         (!filters.doctor || r.doctor === filters.doctor) &&
         (!filters.team ||
           r.teams?.some(
@@ -184,7 +188,12 @@ export function filterResponses(responses: SurveyResponse[], filters: Filters) {
     })
     .map((r) =>
       filters.sectorId
-        ? { ...r, answers: r.answers.filter((a) => a.sectorId === filters.sectorId) }
+        ? {
+            ...r,
+            sectorIds: [filters.sectorId as SectorId],
+            teams: r.teams?.filter((t) => t.sectorId === filters.sectorId),
+            answers: r.answers.filter((a) => a.sectorId === filters.sectorId),
+          }
         : r,
     );
 }
@@ -232,6 +241,12 @@ export function createDemoResponses(now = new Date()): SurveyResponse[] {
         value: i % 9 === 0 ? 2 : i % 7 === 0 ? 3 : (i + j) % 3 === 0 ? 4 : 5,
       })),
       nps: i % 11 === 0 ? null : i % 7 === 0 ? 5 : i % 4 === 0 ? 8 : i % 3 === 0 ? 9 : 10,
+      questionnaire: i % 4 ? sectorIds[0] : 'geral',
+      origin: i % 3 ? 'qr' : 'link',
+      ...(i % 5 === 0 ? { feedback: (['elogio', 'sugestao', 'reclamacao'] as const)[i % 3] } : {}),
+      ...(i % 4 === 0
+        ? { teams: [{ sectorId: sectorIds[0], name: 'Equipe A (exemplo)', scheduleVersion: 1 }] }
+        : {}),
       comment: i % 5 === 0 ? comments[(i / 5) % comments.length] : '',
       shift: i % 2 === 0 ? 'par' : 'impar',
       doctor: i % 2 === 0 ? 'Profissional A (exemplo)' : 'Profissional B (exemplo)',
