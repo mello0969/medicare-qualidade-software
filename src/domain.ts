@@ -242,13 +242,16 @@ export function createDemoResponses(now = new Date()): SurveyResponse[] {
       })),
       nps: i % 11 === 0 ? null : i % 7 === 0 ? 5 : i % 4 === 0 ? 8 : i % 3 === 0 ? 9 : 10,
       questionnaire: i % 4 ? sectorIds[0] : 'geral',
-      origin: i % 3 ? 'qr' : 'link',
+      origin: i % 3 && i % 4 ? 'qr' : 'link',
       ...(i % 5 === 0 ? { feedback: (['elogio', 'sugestao', 'reclamacao'] as const)[i % 3] } : {}),
       ...(i % 4 === 0
-        ? { teams: [{ sectorId: sectorIds[0], name: 'Equipe A (exemplo)', scheduleVersion: 1 }] }
+        ? {
+            attendanceDate: localDate(date),
+            teams: [{ sectorId: sectorIds[0], name: 'Equipe A (exemplo)', scheduleVersion: 1 }],
+          }
         : {}),
       comment: i % 5 === 0 ? comments[(i / 5) % comments.length] : '',
-      shift: i % 2 === 0 ? 'par' : 'impar',
+      shift: i % 4 === 0 ? 'manha' : i % 2 === 0 ? 'par' : 'impar',
       doctor: i % 2 === 0 ? 'Profissional A (exemplo)' : 'Profissional B (exemplo)',
     };
   }).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
