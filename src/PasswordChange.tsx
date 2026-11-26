@@ -76,7 +76,7 @@ export default function PasswordChange() {
             />
           </label>
           <p id="new-password-help" className="small muted">
-            Pelo menos 12 caracteres. Use uma senha diferente da temporária.
+            Pelo menos 12 caracteres. Use uma senha diferente da atual.
           </p>
           <label>
             Confirmar nova senha

@@ -111,6 +111,11 @@ describe('Integridade dos dados', () => {
   it('gera somente registros sintéticos válidos e distintos', () => {
     const data = createDemoResponses(new Date('2026-10-02T12:00:00Z'));
     expect(data.every(validResponse)).toBe(true);
+    expect(
+      data
+        .filter((r) => r.teams?.length)
+        .every((r) => r.attendanceDate && ['manha', 'tarde', 'noite'].includes(r.shift)),
+    ).toBe(true);
     expect(new Set(data.map((r) => r.id)).size).toBe(data.length);
   });
   it('rejeita registros incompatíveis sem aceitá-los silenciosamente', () => {
@@ -138,6 +143,10 @@ describe('Exportação Excel', () => {
     expect(loaded.getWorksheet('Respostas')?.getCell('A2').value).toBe('=1+1');
     expect(loaded.getWorksheet('Respostas')?.getCell('G2').value).toBeNull();
     expect(JSON.stringify(loaded.model)).not.toContain(record.comment);
+    const scoped = await createWorkbook([record], 'Servidor', EMPTY_FILTERS, {
+      allowed: ['triagem'],
+    });
+    expect(scoped.getWorksheet('Resumo')?.getCell('B4').value).toBe('Triagem');
     const analytics = await createWorkbook(
       [record],
       'Exemplo',

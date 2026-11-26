@@ -36,7 +36,14 @@ export async function createWorkbook(
     ['FHDOD — pesquisa de satisfação (projeto acadêmico)'],
     ['Origem dos dados', mode],
     ['Exportado em', new Date().toLocaleString('pt-BR')],
-    ['Setor', filters.sectorId ? sectorName(filters.sectorId) : 'Todos'],
+    [
+      'Setor',
+      filters.sectorId
+        ? sectorName(filters.sectorId)
+        : options.allowed?.length === 1
+          ? sectorName(options.allowed[0])
+          : 'Todos do escopo',
+    ],
     ['Plantão', filters.shift || 'Todos'],
     ['Profissional', filters.doctor || 'Todos'],
     ['Equipe da escala', filters.team || 'Todas'],
