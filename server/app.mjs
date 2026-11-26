@@ -389,6 +389,10 @@ export function createHandler(options = {}) {
         return reply(res, 200, { contact });
       }
 
+      if (method === 'GET' && path === '/api/admin/audit') {
+        requireManager();
+        return reply(res, 200, { events: await repo.listAudit() });
+      }
       if (method === 'GET' && path === '/api/admin/users') {
         requireManager();
         const users = await repo.listUsers();

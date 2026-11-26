@@ -1,3 +1,4 @@
+import { auditQuery } from './audit.mjs';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import pg from 'pg';
@@ -247,6 +248,7 @@ export function createPostgresRepository({
       }
       return publicUser(user);
     },
+    listAudit: () => rows(pool, auditQuery(true)),
     listUsers: async () =>
       (await rows(pool, 'SELECT * FROM fhdod.users ORDER BY name')).map(publicUser),
     async saveSurvey(response, createdAt) {
