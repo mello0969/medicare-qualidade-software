@@ -124,7 +124,7 @@ describe('Integridade dos dados', () => {
 });
 describe('Exportação Excel', () => {
   it('produz XLSX legível com números, filtros e texto que não vira fórmula', async () => {
-    const record = { ...response(9), comment: '=HYPERLINK("https://example.org")' };
+    const record = { ...response(9), id: '=1+1', comment: '=HYPERLINK("https://example.org")' };
     const book = await createWorkbook([record], 'Exemplo', {
       ...EMPTY_FILTERS,
       sectorId: 'recepcao',
@@ -135,7 +135,19 @@ describe('Exportação Excel', () => {
     await loaded.xlsx.load(buffer);
     expect(loaded.worksheets).toHaveLength(3);
     expect(loaded.getWorksheet('Respostas')?.getCell('D2').value).toBe(9);
-    expect(loaded.getWorksheet('Respostas')?.getCell('G2').value).toBe(record.comment);
+    expect(loaded.getWorksheet('Respostas')?.getCell('A2').value).toBe('=1+1');
+    expect(loaded.getWorksheet('Respostas')?.getCell('G2').value).toBeNull();
+    expect(JSON.stringify(loaded.model)).not.toContain(record.comment);
+    const analytics = await createWorkbook(
+      [record],
+      'Exemplo',
+      { ...EMPTY_FILTERS, from: '2026-01-01', to: '2026-01-31' },
+      { kind: 'indicadores', previous: [] },
+    );
+    expect(analytics.getWorksheet('Indicadores')?.getCell('E2').value).toBe(100);
+    expect(analytics.getWorksheet('Indicadores')?.getCell('B3').value).toBe('2025-12-01');
+    expect(analytics.getWorksheet('Respostas')).toBeUndefined();
+    expect(JSON.stringify(analytics.model)).not.toContain(record.id);
     expect(loaded.getWorksheet('Resumo')?.getCell('B4').value).toBe('Recepção');
     expect(loaded.getWorksheet('Avaliações')?.getCell('D2').value).toBe(1);
   });
