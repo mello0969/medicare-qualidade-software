@@ -1,3 +1,4 @@
+import { openapi } from './openapi.mjs';
 import { createServer as createHttpServer } from 'node:http';
 import { timingSafeEqual } from 'node:crypto';
 import { isIP } from 'node:net';
@@ -100,6 +101,11 @@ export function createHandler(options = {}) {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Referrer-Policy', 'same-origin');
     try {
+      const path = new URL(req.url, origin).pathname;
+      const method = req.method;
+      if (method === 'GET' && path === '/api/openapi.json') return reply(res, 200, openapi);
+      if (method === 'GET' && path === '/api/docs')
+        return res.writeHead(302, { Location: new URL('/documentacao.html', origin).href }).end();
       const repo = await initPromise;
       await repo.ready;
       const limit = async (key, maximum) => {
@@ -113,8 +119,6 @@ export function createHandler(options = {}) {
           );
         }
       };
-      const path = new URL(req.url, origin).pathname;
-      const method = req.method;
       const mutation = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
       // Browser writes must originate from the configured frontend, including login and public submissions.
       if (mutation && req.headers.origin !== origin)
@@ -289,6 +293,9 @@ export function createHandler(options = {}) {
             'doctor',
             'contactRequest',
             'attendanceDate',
+            'feedback',
+            'origin',
+            'questionnaire',
           ]) &&
           body.answers.every((answer) =>
             exactKeys(answer, [
@@ -386,6 +393,10 @@ export function createHandler(options = {}) {
         return reply(res, 200, { contact });
       }
 
+      if (method === 'GET' && path === '/api/admin/audit') {
+        requireManager();
+        return reply(res, 200, { events: await repo.listAudit() });
+      }
       if (method === 'GET' && path === '/api/admin/users') {
         requireManager();
         const users = await repo.listUsers();

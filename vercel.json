@@ -1,6 +1,11 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "vite",
+  "git": {
+    "deploymentEnabled": {
+      "feature/melhorias-painel": false
+    }
+  },
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "regions": ["gru1"],

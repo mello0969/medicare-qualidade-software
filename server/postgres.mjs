@@ -1,3 +1,4 @@
+import { auditQuery } from './audit.mjs';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import pg from 'pg';
@@ -247,6 +248,7 @@ export function createPostgresRepository({
       }
       return publicUser(user);
     },
+    listAudit: () => rows(pool, auditQuery(true)),
     listUsers: async () =>
       (await rows(pool, 'SELECT * FROM fhdod.users ORDER BY name')).map(publicUser),
     async saveSurvey(response, createdAt) {
@@ -264,8 +266,8 @@ export function createPostgresRepository({
             : [];
         const added = await one(
           db,
-          `INSERT INTO fhdod.surveys (id,created_at,payload_hash,nps,comment,shift,doctor,attendance_date,teams_json)
-          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+          `INSERT INTO fhdod.surveys (id,created_at,payload_hash,nps,comment,shift,doctor,attendance_date,teams_json,feedback,origin,questionnaire)
+          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
           ON CONFLICT (id) DO NOTHING RETURNING id`,
           [
             response.id,
@@ -277,6 +279,9 @@ export function createPostgresRepository({
             response.doctor,
             response.attendanceDate ?? null,
             JSON.stringify(teams),
+            response.feedback ?? null,
+            response.origin ?? null,
+            response.questionnaire ?? null,
           ],
         );
         if (!added) {
@@ -372,6 +377,11 @@ export function createPostgresRepository({
         comment: user.role === 'manager' ? s.comment : '',
         shift: s.shift,
         doctor: scoped && user.sectorId !== 'medico' ? '' : s.doctor,
+        ...(s.feedback ? { feedback: s.feedback } : {}),
+        ...(s.origin ? { origin: s.origin } : {}),
+        ...(s.questionnaire && (!scoped || ['geral', user.sectorId].includes(s.questionnaire))
+          ? { questionnaire: s.questionnaire }
+          : {}),
         ...publicSurveySchedule(s, user),
       }));
     },

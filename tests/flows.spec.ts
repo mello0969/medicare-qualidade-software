@@ -30,11 +30,11 @@ test('paciente responde, dados persistem e painel usa apenas as respostas locais
   await page.getByLabel('Seu comentário').fill('Comentário fictício para validar o fluxo.');
   await confirmSurvey(page);
   await page.getByRole('link', { name: 'Ver a resposta no painel' }).click();
-  await expect(page.locator('.metric').first()).toContainText('1');
-  await expect(page.locator('.nps-score')).toContainText('+100');
+  await expect(page.locator('.kpi').first()).toContainText('n = 1');
+  await expect(page.locator('.kpi strong').first()).toHaveText('100');
   await expect(page.locator('.comment')).toContainText('Comentário fictício');
   await page.reload();
-  await expect(page.locator('.nps-score')).toContainText('+100');
+  await expect(page.locator('.kpi strong').first()).toHaveText('100');
   expect(
     await page.evaluate(() => JSON.parse(localStorage.getItem('medicare.responses.v1')!).length),
   ).toBe(1);
@@ -43,15 +43,19 @@ test('paciente responde, dados persistem e painel usa apenas as respostas locais
 test('filtros, vazio, restauração e download Excel', async ({ page }) => {
   await page.goto('/#/demonstracao');
   await page.getByRole('combobox', { name: 'Setor', exact: true }).selectOption('triagem');
+  await page.getByRole('button', { name: 'Aplicar filtros' }).click();
   await expect(page.locator('.sector-scores')).toContainText('Triagem');
   await expect(page.locator('.sector-scores')).not.toContainText('Recepção');
   await page.getByLabel('De', { exact: true }).fill('2099-01-01');
+  await expect(page.getByRole('alert')).toContainText('data inicial');
+  await page.getByLabel('Até', { exact: true }).fill('2099-01-02');
+  await page.getByRole('button', { name: 'Aplicar filtros' }).click();
   await expect(
     page.getByRole('heading', { name: 'Nenhuma resposta com esses filtros' }),
   ).toBeVisible();
   await page.getByRole('button', { name: 'Limpar filtros', exact: true }).click();
   const downloadPromise = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Exportar Excel' }).click();
+  await page.getByRole('button', { name: 'Exportar respostas (Excel)' }).click();
   const download = await downloadPromise;
   expect(download.suggestedFilename()).toMatch(/\.xlsx$/);
   expect(await download.failure()).toBeNull();

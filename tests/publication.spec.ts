@@ -78,7 +78,7 @@ test.describe('QR Codes, TV Wall e permissões de publicação', () => {
       for await (const chunk of stream) chunks.push(Buffer.from(chunk));
       const png = Buffer.concat(chunks);
       expect(png.subarray(0, 8)).toEqual(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
-      expect(await decodeDownloadedQr(page, png)).toBe(expectedUrl);
+      expect(await decodeDownloadedQr(page, png)).toBe(expectedUrl + '?origem=qr');
     }
     await expectAccessible(page);
     await page.goto(`${origin}/#/pesquisa/recepcao`);
@@ -273,17 +273,10 @@ test.describe('QR Codes, TV Wall e permissões de publicação', () => {
       await expect(page.locator('.tv-wall-embedded')).toBeVisible();
       await expect(page.getByRole('status')).toContainText('Atualizado às');
       await expect(page.getByRole('link', { name: 'Abrir TV Wall', exact: true })).toBeVisible();
-      await expect(page.getByRole('button', { name: 'Exportar Excel', exact: true })).toHaveCount(
-        0,
-      );
+      await expect(page.getByRole('button', { name: /^Exportar .*\(Excel\)$/ })).toHaveCount(0);
       const openMenu = page.getByRole('button', { name: 'Abrir navegação', exact: true });
       if (await openMenu.isVisible()) await openMenu.click();
-      for (const label of [
-        'Acessos da equipe',
-        'Mensagens da pesquisa',
-        'Editar perguntas',
-        'Escalas das equipes',
-      ])
+      for (const label of ['Usuários', 'Mensagens da pesquisa', 'Editar perguntas', 'Escalas'])
         await expect(page.getByRole('link', { name: label, exact: true })).toHaveCount(0);
       await expect(page.getByRole('link', { name: 'Ouvidoria', exact: true })).toHaveCount(
         role === 'ombudsman' ? 1 : 0,

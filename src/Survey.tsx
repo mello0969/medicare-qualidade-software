@@ -17,6 +17,7 @@ import {
   sectorName,
   questionsForSectors,
   DEFAULT_SETTINGS,
+  FEEDBACK,
   localDate,
   type SurveySettings,
   type SurveySubmission,
@@ -46,6 +47,7 @@ export default function Survey({
   const [step, setStep] = useState(-1);
   const [values, setValues] = useState<Record<string, number>>({});
   const [nps, setNps] = useState<number | null>(null);
+  const [feedback, setFeedback] = useState<keyof typeof FEEDBACK | ''>('');
   const [comment, setComment] = useState('');
   const [shift, setShift] = useState<Shift>('nao-informado');
   const [doctor, setDoctor] = useState('');
@@ -141,6 +143,10 @@ export default function Survey({
             value: values[q.id],
           })),
         nps,
+        questionnaire: isSector(sector) ? sector : 'geral',
+        origin:
+          new URLSearchParams(location.hash.split('?')[1]).get('origem') === 'qr' ? 'qr' : 'link',
+        ...(feedback ? { feedback } : {}),
         comment: comment.trim(),
         shift,
         doctor: doctor.trim(),
@@ -266,6 +272,7 @@ export default function Survey({
                   setStep(-1);
                   setValues({});
                   setNps(null);
+                  setFeedback('');
                   setComment('');
                   setShift('nao-informado');
                   setDoctor('');
@@ -426,6 +433,21 @@ export default function Survey({
                   <p className="survey-description">
                     Um elogio ou uma sugestão faz diferença. Esta etapa é opcional.
                   </p>
+                  <label className="field-label" htmlFor="feedback">
+                    Tipo de manifestação (opcional)
+                  </label>
+                  <select
+                    id="feedback"
+                    value={feedback}
+                    onChange={(e) => setFeedback(e.target.value as typeof feedback)}
+                  >
+                    <option value="">Sem classificação</option>
+                    {Object.entries(FEEDBACK).map(([key, label]) => (
+                      <option key={key} value={key}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
                   <label className="field-label" htmlFor="comment">
                     Seu comentário
                   </label>
@@ -616,6 +638,12 @@ export default function Survey({
             <dd>{questions.filter((question) => values[question.id] > 0).length}</dd>
             <dt>Nota de recomendação</dt>
             <dd>{nps ?? '—'} / 10</dd>
+            {feedback && (
+              <>
+                <dt>Tipo de manifestação</dt>
+                <dd>{FEEDBACK[feedback]}</dd>
+              </>
+            )}
             <dt>Pedido de contato</dt>
             <dd>{lowRating && wantsContact && !localMode ? 'Autorizado' : 'Não solicitado'}</dd>
           </dl>

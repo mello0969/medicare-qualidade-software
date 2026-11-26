@@ -75,6 +75,32 @@ const managerInput = {
 };
 
 for (const engine of ['sqlite', 'postgres']) {
+  test(`${engine}: preserva classificação e origem, limita pesquisa setorial e protege reenvios`, async (t) => {
+    const { repo } = await repository(t, engine);
+    const admin = await repo.createUser(managerInput);
+    const input = survey({
+      origin: 'qr',
+      questionnaire: 'recepcao',
+      feedback: 'sugestao',
+      sectorIds: ['recepcao', 'triagem'],
+    });
+    await repo.saveSurvey(input, time);
+    const [stored] = await repo.listSurveys(admin);
+    assert.deepEqual(
+      [stored.origin, stored.questionnaire, stored.feedback],
+      ['qr', 'recepcao', 'sugestao'],
+    );
+    const [scoped] = await repo.listSurveys({ role: 'sector-admin', sectorId: 'triagem' });
+    assert.equal(scoped.questionnaire, undefined);
+    assert.equal((await repo.saveSurvey(input, time)).duplicate, true);
+    await assert.rejects(
+      Promise.resolve().then(() => repo.saveSurvey({ ...input, feedback: 'elogio' }, time)),
+      /ID_CONFLICT/,
+    );
+    const events = await repo.listAudit();
+    assert.ok(events.length);
+    assert.deepEqual(Object.keys(events[0]).sort(), ['createdAt', 'event']);
+  });
   test(`${engine}: schedule snapshots match only sector/date/shift and remain immutable after edits`, async (t) => {
     const { repo } = await repository(t, engine);
     const admin = await repo.createUser(managerInput);

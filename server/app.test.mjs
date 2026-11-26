@@ -411,3 +411,20 @@ test('Mutations enforce the configured origin, rate limits expire, and oversize 
   assert.equal((await request('/api/responses', { method: 'POST', body: survey() })).status, 201);
   assert.equal((await request('/api/responses', { method: 'POST', body: survey() })).status, 429);
 });
+
+test('auditoria exige Super Admin e rejeita classificações desconhecidas no envio', async (t) => {
+  const { request, login } = await fixture(t);
+  assert.equal((await request('/api/admin/audit')).status, 401);
+  const sector = await login(sectorInput.email);
+  assert.equal((await request('/api/admin/audit', sector)).status, 403);
+  const admin = await login();
+  const records = await request('/api/admin/audit', admin);
+  assert.equal(records.status, 200);
+  assert.ok(records.data.events.length);
+  for (const field of ['origin', 'questionnaire', 'feedback'])
+    assert.equal(
+      (await request('/api/responses', { method: 'POST', body: survey({ [field]: 'invalido' }) }))
+        .status,
+      400,
+    );
+});

@@ -194,3 +194,13 @@ export async function updateContactStatus(id: string, status: ContactStatus, csr
     json('PATCH', { status }, protectedToken(csrfToken)),
   );
 }
+
+export const auditLabels = {
+  user_created: 'Criação de acesso',
+  password_changed: 'Alteração de senha',
+  question_changed: 'Publicação de pergunta',
+  schedule_changed: 'Alteração de escala',
+  contact_updated: 'Atualização de situação na ouvidoria',
+} as const;
+export type AuditEvent = { createdAt: string; event: keyof typeof auditLabels };
+export const getAudit = () => request<{ events: AuditEvent[] }>('/admin/audit');
