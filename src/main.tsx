@@ -4,6 +4,7 @@ import '@fontsource-variable/manrope';
 import App from './App';
 import './styles.css';
 import './features.css';
+import './dashboard.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

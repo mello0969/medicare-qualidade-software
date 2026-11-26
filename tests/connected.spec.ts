@@ -90,7 +90,7 @@ test.describe('pesquisa compartilhada e administração', () => {
     expect(scoped.doctor).toBe('');
     expect((await page.request.get('/api/admin/users')).status()).toBe(403);
     expect((await page.request.get('/api/admin/contacts')).status()).toBe(403);
-    await expect(page.getByRole('link', { name: 'Acessos da equipe' })).toHaveCount(0);
+    await expect(page.getByRole('link', { name: 'Usuários' })).toHaveCount(0);
     await page.goto('/#/perguntas');
     await expect(page.getByLabel('Pergunta 1', { exact: true })).toBeVisible();
     const editorAllowed = await page
@@ -230,7 +230,7 @@ test.describe('pesquisa compartilhada e administração', () => {
     await page.goto('/#/painel?dados=servidor');
     await expect(page.getByLabel('Senha', { exact: true })).toBeVisible();
     await expect(page.locator('.comment')).toHaveCount(0);
-    await expect(page.getByRole('button', { name: 'Exportar Excel' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /^Exportar .*\(Excel\)$/ })).toHaveCount(0);
   });
 
   test('erro de conexão mantém o rascunho e a tentativa seguinte usa o mesmo identificador', async ({
