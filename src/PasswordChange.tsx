@@ -37,17 +37,20 @@ export default function PasswordChange() {
     <main className="access-page password-page">
       <Brand className="auth-brand" />
       <section className="auth-panel password-panel" aria-labelledby="password-heading">
-        <h1 id="password-heading">Defina sua senha</h1>
+        <h1 id="password-heading">
+          {user?.mustChangePassword ? 'Defina sua senha' : 'Trocar senha'}
+        </h1>
         <p>
-          Seu primeiro acesso usa uma senha temporária. Escolha uma senha pessoal para abrir o
-          painel.
+          {user?.mustChangePassword
+            ? 'Seu primeiro acesso usa uma senha temporária. Escolha uma senha pessoal para abrir o painel.'
+            : 'Confirme a senha atual para escolher uma nova senha.'}
         </p>
         <p className="small muted">
           Conta: {user?.email}. O administrador não poderá consultar sua nova senha.
         </p>
         <form className="auth-form" onSubmit={submit} aria-busy={loading}>
           <label>
-            Senha temporária
+            {user?.mustChangePassword ? 'Senha temporária' : 'Senha atual'}
             <input
               type="password"
               autoComplete="current-password"
@@ -96,6 +99,11 @@ export default function PasswordChange() {
           <button className="button primary" disabled={loading}>
             {loading ? 'Salvando senha…' : 'Salvar minha senha'}
           </button>
+          {!user?.mustChangePassword && (
+            <a className="text-link" href="#/painel">
+              Voltar ao painel
+            </a>
+          )}
           <button
             className="text-button"
             type="button"

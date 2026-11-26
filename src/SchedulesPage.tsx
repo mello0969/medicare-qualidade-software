@@ -46,7 +46,7 @@ async function scheduleRequest<T>(path: string, init: RequestInit): Promise<T> {
   }
 }
 
-export default function SchedulesPage() {
+export default function SchedulesPage({ directory = false }: { directory?: boolean }) {
   const { user, csrfToken, refresh } = useAuth();
   const [month, setMonth] = useState(localDate(new Date()).slice(0, 7));
   const [schedules, setSchedules] = useState<ScheduleEntry[]>([]);
@@ -203,7 +203,7 @@ export default function SchedulesPage() {
     <div className="schedules-page">
       <div className="page-heading">
         <div>
-          <h1>Escalas mensais</h1>
+          <h1>{directory ? 'Setores e equipes' : 'Escalas mensais'}</h1>
           <p>Organize as equipes por setor, data e turno.</p>
         </div>
       </div>
@@ -245,162 +245,201 @@ export default function SchedulesPage() {
           {notice}
         </p>
       )}
-      <div className={`schedules-layout${canEdit ? '' : ' schedules-readonly'}`}>
-        {canEdit && (
-          <section className="panel schedule-editor" aria-labelledby="schedule-form-title">
-            <h2 id="schedule-form-title">
-              {draft.expectedVersion ? 'Editar escala' : 'Cadastrar escala'}
-            </h2>
-            <form onSubmit={save} aria-busy={saving}>
-              <fieldset disabled={loading || saving || !loaded}>
-                <legend className="sr-only">Dados da equipe por setor, data e turno</legend>
-                <label htmlFor="schedule-sector">
-                  Setor da escala
-                  <select
-                    id="schedule-sector"
-                    value={draft.sectorId}
-                    onChange={(event) => chooseSlot({ sectorId: event.target.value as SectorId })}
-                    required
-                  >
-                    {sectors.map((sector) => (
-                      <option key={sector.id} value={sector.id}>
-                        {sector.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label htmlFor="schedule-date">
-                  Data do atendimento
-                  <input
-                    id="schedule-date"
-                    type="date"
-                    value={draft.date}
-                    min={`${month}-01`}
-                    max={`${month}-${String(lastDay).padStart(2, '0')}`}
-                    onChange={(event) => chooseSlot({ date: event.target.value })}
-                    required
-                  />
-                </label>
-                <label htmlFor="schedule-shift">
-                  Turno da escala
-                  <select
-                    id="schedule-shift"
-                    value={draft.shift}
-                    onChange={(event) =>
-                      chooseSlot({ shift: event.target.value as ScheduleEntry['shift'] })
-                    }
-                    required
-                  >
-                    {Object.entries(shiftNames).map(([value, label]) => (
-                      <option key={value} value={value}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label htmlFor="schedule-team">
-                  Equipe
-                  <input
-                    ref={teamNode}
-                    id="schedule-team"
-                    value={draft.team}
-                    onChange={(event) => setDraft({ ...draft, team: event.target.value })}
-                    placeholder="Equipe A (exemplo)"
-                    aria-describedby="schedule-team-help"
-                    autoComplete="off"
-                    required
-                    minLength={2}
-                    maxLength={80}
-                  />
-                </label>
-                <p className="small muted" id="schedule-team-help">
-                  Informe somente o rótulo da equipe. Não inclua dados pessoais.
-                </p>
-                {needsEdit && (
-                  <p className="small">
-                    Já existe uma escala neste horário. Use “Editar” na tabela.
-                  </p>
-                )}
-                <button className="button primary" disabled={conflict || needsEdit}>
-                  {saving ? 'Salvando escala…' : 'Salvar escala'}
-                </button>
-              </fieldset>
-            </form>
-          </section>
-        )}
-        <section className="panel schedule-list" aria-labelledby="schedule-table-title">
-          <div className="panel-heading">
-            <h2 id="schedule-table-title">Escalas do mês</h2>
-            {!loading && loaded && (
-              <span className="badge">
-                {ordered.length} {ordered.length === 1 ? 'registro' : 'registros'}
-              </span>
-            )}
-          </div>
+      {directory ? (
+        <section className="surface dash-section">
+          <h2>Equipes por setor no mês</h2>
           {loading ? (
-            <p role="status">Carregando escalas…</p>
-          ) : !validMonth(month) ? (
-            <p className="muted">Escolha um mês para consultar as escalas.</p>
-          ) : loaded && !ordered.length ? (
-            <p className="muted">Nenhuma equipe cadastrada neste mês.</p>
-          ) : loaded ? (
-            <>
-              <p className="schedule-scroll-hint small muted" id="schedule-scroll-help">
-                Se necessário, deslize a tabela para os lados para ver todas as colunas.
-              </p>
-              <div
-                className="schedule-table-wrap"
-                role="region"
-                aria-labelledby="schedule-table-title"
-                aria-describedby="schedule-scroll-help"
-                tabIndex={0}
-              >
-                <table>
-                  <caption className="sr-only">Equipes cadastradas no mês {month}</caption>
-                  <thead>
-                    <tr>
-                      <th scope="col">Data</th>
-                      <th scope="col">Setor</th>
-                      <th scope="col">Turno</th>
-                      <th scope="col">Equipe</th>
-                      {canEdit && <th scope="col">Ação</th>}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {ordered.map((entry) => (
-                      <tr key={scheduleKey(entry)}>
-                        <td>
-                          <time dateTime={entry.date}>
-                            {entry.date.split('-').reverse().join('/')}
-                          </time>
-                        </td>
-                        <td>{sectorName(entry.sectorId)}</td>
-                        <td>{shiftNames[entry.shift]}</td>
-                        <td className="schedule-team-cell">{entry.team}</td>
-                        {canEdit && (
-                          <td>
-                            <button
-                              type="button"
-                              className="text-button"
-                              disabled={saving || loading}
-                              aria-label={`Editar escala de ${sectorName(entry.sectorId)}, ${entry.date.split('-').reverse().join('/')}, ${shiftNames[entry.shift]}`}
-                              onClick={() => edit(entry)}
-                            >
-                              Editar
-                            </button>
-                          </td>
-                        )}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </>
+            <p role="status">Carregando equipes…</p>
           ) : (
-            <p className="muted">Use “Recarregar mês” para tentar a consulta novamente.</p>
+            loaded && (
+              <table>
+                <thead>
+                  <tr>
+                    <th>Setor</th>
+                    <th>Equipes na escala</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sectors.map((s) => (
+                    <tr key={s.id}>
+                      <th scope="row">{s.name}</th>
+                      <td>
+                        {[
+                          ...new Set(
+                            schedules.filter((r) => r.sectorId === s.id).map((r) => r.team),
+                          ),
+                        ]
+                          .sort()
+                          .join(', ') || 'Sem equipe no mês'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )
           )}
+          <a className="text-link" href="#/escalas">
+            Consultar escalas
+          </a>
         </section>
-      </div>
+      ) : (
+        <div className={`schedules-layout${canEdit ? '' : ' schedules-readonly'}`}>
+          {canEdit && (
+            <section className="panel schedule-editor" aria-labelledby="schedule-form-title">
+              <h2 id="schedule-form-title">
+                {draft.expectedVersion ? 'Editar escala' : 'Cadastrar escala'}
+              </h2>
+              <form onSubmit={save} aria-busy={saving}>
+                <fieldset disabled={loading || saving || !loaded}>
+                  <legend className="sr-only">Dados da equipe por setor, data e turno</legend>
+                  <label htmlFor="schedule-sector">
+                    Setor da escala
+                    <select
+                      id="schedule-sector"
+                      value={draft.sectorId}
+                      onChange={(event) => chooseSlot({ sectorId: event.target.value as SectorId })}
+                      required
+                    >
+                      {sectors.map((sector) => (
+                        <option key={sector.id} value={sector.id}>
+                          {sector.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label htmlFor="schedule-date">
+                    Data do atendimento
+                    <input
+                      id="schedule-date"
+                      type="date"
+                      value={draft.date}
+                      min={`${month}-01`}
+                      max={`${month}-${String(lastDay).padStart(2, '0')}`}
+                      onChange={(event) => chooseSlot({ date: event.target.value })}
+                      required
+                    />
+                  </label>
+                  <label htmlFor="schedule-shift">
+                    Turno da escala
+                    <select
+                      id="schedule-shift"
+                      value={draft.shift}
+                      onChange={(event) =>
+                        chooseSlot({ shift: event.target.value as ScheduleEntry['shift'] })
+                      }
+                      required
+                    >
+                      {Object.entries(shiftNames).map(([value, label]) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label htmlFor="schedule-team">
+                    Equipe
+                    <input
+                      ref={teamNode}
+                      id="schedule-team"
+                      value={draft.team}
+                      onChange={(event) => setDraft({ ...draft, team: event.target.value })}
+                      placeholder="Equipe A (exemplo)"
+                      aria-describedby="schedule-team-help"
+                      autoComplete="off"
+                      required
+                      minLength={2}
+                      maxLength={80}
+                    />
+                  </label>
+                  <p className="small muted" id="schedule-team-help">
+                    Informe somente o rótulo da equipe. Não inclua dados pessoais.
+                  </p>
+                  {needsEdit && (
+                    <p className="small">
+                      Já existe uma escala neste horário. Use “Editar” na tabela.
+                    </p>
+                  )}
+                  <button className="button primary" disabled={conflict || needsEdit}>
+                    {saving ? 'Salvando escala…' : 'Salvar escala'}
+                  </button>
+                </fieldset>
+              </form>
+            </section>
+          )}
+          <section className="panel schedule-list" aria-labelledby="schedule-table-title">
+            <div className="panel-heading">
+              <h2 id="schedule-table-title">Escalas do mês</h2>
+              {!loading && loaded && (
+                <span className="badge">
+                  {ordered.length} {ordered.length === 1 ? 'registro' : 'registros'}
+                </span>
+              )}
+            </div>
+            {loading ? (
+              <p role="status">Carregando escalas…</p>
+            ) : !validMonth(month) ? (
+              <p className="muted">Escolha um mês para consultar as escalas.</p>
+            ) : loaded && !ordered.length ? (
+              <p className="muted">Nenhuma equipe cadastrada neste mês.</p>
+            ) : loaded ? (
+              <>
+                <p className="schedule-scroll-hint small muted" id="schedule-scroll-help">
+                  Se necessário, deslize a tabela para os lados para ver todas as colunas.
+                </p>
+                <div
+                  className="schedule-table-wrap"
+                  role="region"
+                  aria-labelledby="schedule-table-title"
+                  aria-describedby="schedule-scroll-help"
+                  tabIndex={0}
+                >
+                  <table>
+                    <caption className="sr-only">Equipes cadastradas no mês {month}</caption>
+                    <thead>
+                      <tr>
+                        <th scope="col">Data</th>
+                        <th scope="col">Setor</th>
+                        <th scope="col">Turno</th>
+                        <th scope="col">Equipe</th>
+                        {canEdit && <th scope="col">Ação</th>}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {ordered.map((entry) => (
+                        <tr key={scheduleKey(entry)}>
+                          <td>
+                            <time dateTime={entry.date}>
+                              {entry.date.split('-').reverse().join('/')}
+                            </time>
+                          </td>
+                          <td>{sectorName(entry.sectorId)}</td>
+                          <td>{shiftNames[entry.shift]}</td>
+                          <td className="schedule-team-cell">{entry.team}</td>
+                          {canEdit && (
+                            <td>
+                              <button
+                                type="button"
+                                className="text-button"
+                                disabled={saving || loading}
+                                aria-label={`Editar escala de ${sectorName(entry.sectorId)}, ${entry.date.split('-').reverse().join('/')}, ${shiftNames[entry.shift]}`}
+                                onClick={() => edit(entry)}
+                              >
+                                Editar
+                              </button>
+                            </td>
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            ) : (
+              <p className="muted">Use “Recarregar mês” para tentar a consulta novamente.</p>
+            )}
+          </section>
+        </div>
+      )}
     </div>
   );
 }
