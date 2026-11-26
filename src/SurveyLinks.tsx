@@ -30,7 +30,7 @@ export default function SurveyLinks() {
         const generated = await Promise.all(
           SECTORS.map(async (sector) => [
             sector.id,
-            await toDataURL(links[sector.id], {
+            await toDataURL(links[sector.id] + '?origem=qr', {
               width: 512,
               margin: 4,
               errorCorrectionLevel: 'M',

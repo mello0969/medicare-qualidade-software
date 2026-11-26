@@ -173,6 +173,13 @@ export function openDatabase(dbPath = 'data/medicare.sqlite') {
   });
   initializeExperience(db);
   initializeSchedules(db);
+  transaction(db, () => {
+    const columns = db.prepare('PRAGMA table_info(surveys)').all();
+    for (const name of ['feedback', 'origin', 'questionnaire']) {
+      if (!columns.some((column) => column.name === name))
+        db.exec('ALTER TABLE surveys ADD COLUMN ' + name + ' TEXT');
+    }
+  });
   return db;
 }
 
@@ -357,6 +364,9 @@ export function responseHash(response) {
   };
   // Omission keeps hashes of historical submissions unchanged after the migration.
   if (response.attendanceDate !== undefined) canonical.attendanceDate = response.attendanceDate;
+  for (const field of ['feedback', 'origin', 'questionnaire']) {
+    if (response[field] !== undefined) canonical[field] = response[field];
+  }
   if (response.contactRequest) {
     const contact = response.contactRequest;
     canonical.contactRequest = {
@@ -397,8 +407,8 @@ export function saveSurvey(db, response, createdAt) {
     const teams = resolveScheduleTeams(db, response);
     db.prepare(
       `INSERT INTO surveys
-      (id,created_at,payload_hash,nps,comment,shift,doctor,attendance_date,teams_json)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      (id,created_at,payload_hash,nps,comment,shift,doctor,attendance_date,teams_json,feedback,origin,questionnaire)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     ).run(
       response.id,
       createdAt,
@@ -409,6 +419,9 @@ export function saveSurvey(db, response, createdAt) {
       response.doctor,
       response.attendanceDate ?? null,
       JSON.stringify(teams),
+      response.feedback ?? null,
+      response.origin ?? null,
+      response.questionnaire ?? null,
     );
     const addSector = db.prepare('INSERT INTO survey_sectors VALUES (?, ?)');
     for (const sector of response.sectorIds) addSector.run(response.id, sector);
@@ -456,6 +469,11 @@ export function listSurveys(db, user) {
     comment: user.role === 'manager' ? row.comment : '',
     shift: row.shift,
     doctor: scoped && user.sectorId !== 'medico' ? '' : row.doctor,
+    ...(row.feedback ? { feedback: row.feedback } : {}),
+    ...(row.origin ? { origin: row.origin } : {}),
+    ...(row.questionnaire && (!scoped || ['geral', user.sectorId].includes(row.questionnaire))
+      ? { questionnaire: row.questionnaire }
+      : {}),
     ...publicSurveySchedule(row, user),
   }));
 }

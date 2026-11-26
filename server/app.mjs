@@ -289,6 +289,9 @@ export function createHandler(options = {}) {
             'doctor',
             'contactRequest',
             'attendanceDate',
+            'feedback',
+            'origin',
+            'questionnaire',
           ]) &&
           body.answers.every((answer) =>
             exactKeys(answer, [

@@ -25,6 +25,15 @@ export type Answer = {
   sectorId: QuestionSectorId;
   value: number;
 };
+export const FEEDBACK = {
+  reclamacao: 'Reclamação',
+  sugestao: 'Sugestão',
+  elogio: 'Elogio',
+} as const;
+export const ORIGINS = {
+  qr: 'QR Code identificado',
+  link: 'Acesso por link sem marcador QR',
+} as const;
 export type SurveyResponse = {
   id: string;
   createdAt: string;
@@ -34,6 +43,9 @@ export type SurveyResponse = {
   comment: string;
   shift: Shift;
   doctor: string;
+  questionnaire?: QuestionSectorId;
+  origin?: keyof typeof ORIGINS;
+  feedback?: keyof typeof FEEDBACK;
   attendanceDate?: string;
   teams?: { sectorId: SectorId; name: string; scheduleVersion: number }[];
 };
