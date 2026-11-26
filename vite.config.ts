@@ -6,6 +6,7 @@ const apiTarget = process.env.MEDICARE_API_URL ?? 'http://127.0.0.1:3001';
 export default defineConfig({
   plugins: [react()],
   base: './',
+  build: { rolldownOptions: { input: { app: 'index.html', documentacao: 'documentacao.html' } } },
   // The checkout is on OneDrive: wait for writes to finish before invalidating modules.
   server: {
     watch: { awaitWriteFinish: { stabilityThreshold: 250, pollInterval: 50 } },
