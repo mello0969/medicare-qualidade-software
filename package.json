@@ -17,7 +17,8 @@
     "test:e2e": "playwright test",
     "format:check": "prettier --check src server scripts tests api package.json tsconfig.json vite.config.ts playwright.config.ts vercel.json index.html",
     "db:migrate": "node --env-file-if-exists=.env server/migrate-postgres.mjs",
-    "admin:cloud": "node --env-file-if-exists=.env server/bootstrap-postgres.mjs"
+    "admin:cloud": "node --env-file-if-exists=.env server/bootstrap-postgres.mjs",
+    "test:coverage:api": "node --test --experimental-test-coverage --test-coverage-include=server/*.mjs --test-coverage-exclude=server/*.test.mjs server/*.test.mjs"
   },
   "engines": {
     "node": ">=24.0.0"
@@ -40,6 +41,7 @@
     }
   },
   "devDependencies": {
+    "@apidevtools/swagger-parser": "13.1.0",
     "@axe-core/playwright": "4.13.0",
     "@electric-sql/pglite": "0.5.11",
     "@playwright/test": "1.63.0",

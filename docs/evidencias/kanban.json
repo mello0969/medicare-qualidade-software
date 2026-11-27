@@ -1,0 +1,57 @@
+{
+  "date": "2026-11-26",
+  "boardUrl": "https://trello.com/b/2VKO9CVI/fhdod-projeto-integrado-murilo-e-arthur",
+  "createdForFinalReview": true,
+  "cards": [
+    {
+      "title": "Autorizar commit, publicação e envio no Classroom",
+      "list": "A fazer",
+      "url": "https://trello.com/c/7oCwpuMK/9-autorizar-commit-publica%C3%A7%C3%A3o-e-envio-no-classroom"
+    },
+    {
+      "title": "Apresentação e aceite do cliente",
+      "list": "A fazer",
+      "url": "https://trello.com/c/LkdvFEIv/10-apresenta%C3%A7%C3%A3o-e-aceite-do-cliente"
+    },
+    {
+      "title": "Pesquisa, NPS e contato opcional",
+      "list": "Concluído",
+      "url": "https://trello.com/c/NjMssS0M/1-pesquisa-nps-e-contato-opcional"
+    },
+    {
+      "title": "Swagger/OpenAPI fiel à API existente",
+      "list": "Concluído",
+      "url": "https://trello.com/c/cPvSEOfP/4-swagger-openapi-fiel-%C3%A0-api-existente"
+    },
+    {
+      "title": "Cinco perfis, escalas e banco compartilhado",
+      "list": "Concluído",
+      "url": "https://trello.com/c/7WCoooRM/2-cinco-perfis-escalas-e-banco-compartilhado"
+    },
+    {
+      "title": "Documentação de requisitos e arquitetura",
+      "list": "Concluído",
+      "url": "https://trello.com/c/SgQpNT99/5-documenta%C3%A7%C3%A3o-de-requisitos-e-arquitetura"
+    },
+    {
+      "title": "Personas, mockups, Figma e manual de Design",
+      "list": "Concluído",
+      "url": "https://trello.com/c/Bw1ngJP4/3-personas-mockups-figma-e-manual-de-design"
+    },
+    {
+      "title": "Modelagem e documentação do banco",
+      "list": "Concluído",
+      "url": "https://trello.com/c/DmYhrbPN/6-modelagem-e-documenta%C3%A7%C3%A3o-do-banco"
+    },
+    {
+      "title": "Plano de negócios e projeção financeira",
+      "list": "Concluído",
+      "url": "https://trello.com/c/w7gxtaWW/7-plano-de-neg%C3%B3cios-e-proje%C3%A7%C3%A3o-financeira"
+    },
+    {
+      "title": "Reexecutar testes e medir cobertura",
+      "list": "Concluído",
+      "url": "https://trello.com/c/5LScr9oc/8-reexecutar-testes-e-medir-cobertura"
+    }
+  ]
+}

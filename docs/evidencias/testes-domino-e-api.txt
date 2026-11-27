@@ -1,0 +1,90 @@
+Evidência de execução local - 26/11/2026 - base 87e7766 + revisão integrada
+
+> medicare-qualidade-software@0.4.0 test
+> vitest run && node --test server/*.test.mjs
+
+
+ RUN  v5.0.3 <projeto>
+
+
+ Test Files  3 passed (3)
+      Tests  15 passed (15)
+   Start at  22:20:14
+   Duration  984ms (tests 72%, transform 15%, import 10%, worker 3%)
+
+(node:53728) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ Public questions are canonical and administrative data requires a session (424.6924ms)
+✔ Passwords are salted and hashed, login errors are generic, cookies are protected and logout revokes access (905.637ms)
+✔ Sessions expire and only a token hash is stored in SQLite (593.7311ms)
+✔ Submissions persist across server restarts, use server time, and are idempotent (698.044ms)
+✔ Forged question snapshots, duplicate answers/sectors, invalid UUIDs and out-of-range ratings are rejected (584.6875ms)
+✔ Sector administrators receive only their own sector answers and cannot access users or other-sector comments (1014.1469ms)
+✔ Question editing requires CSRF and matching origin, enforces sector scope and preserves history with an audit (459.3754ms)
+✔ Only a manager can create users, validation rejects weak passwords and duplicate addresses (876.4439ms)
+✔ Mutations enforce the configured origin, rate limits expire, and oversize requests are rejected (723.4335ms)
+✔ auditoria exige Super Admin e rejeita classificações desconhecidas no envio (923.2072ms)
+(node:57856) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ An unwritable credential location does not create an inaccessible manager and setup can be retried (370.4636ms)
+✔ An existing credential file is preserved and no account is created (68.4066ms)
+✔ An existing manager keeps the same account and credentials even if the requested path cannot be written (247.1902ms)
+✔ A database account conflict rolls back and removes only the newly created credential file (516.2965ms)
+✔ OpenAPI é válido e documenta todas as rotas HTTP implementadas (177.2995ms)
+✔ Exemplo público de envio usa pergunta vigente, NPS zero e nenhum contato (0.4263ms)
+(node:58612) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ NPS is mandatory for new submissions, while all rating questions can be skipped and anonymous complaints remain optional (657.5249ms)
+✔ General answers do not introduce a fictional department and sector managers see only their own ratings (722.3731ms)
+✔ Administrators can create general questions and sector managers can create only their own sector questions (672.1958ms)
+✔ Question edits reject noncanonical sets, sector reassignment and stale forms after a question is added (649.7586ms)
+✔ Optional contact requests require a low rating, explicit consent, a published consent version and valid contact fields (633.4905ms)
+✔ Contact records are restricted to administrators and are never returned in analytics responses (1139.5015ms)
+✔ Idempotent submissions preserve one contact; changing or removing consent data on the same survey ID is rejected (460.7409ms)
+✔ Only administrators can edit messages, concurrent edits are rejected and contacts retain the consent that was accepted (806.3149ms)
+✔ Contact status changes require administrator access and CSRF and produce a minimal audit without contact contents (782.3873ms)
+✔ Settings validation rejects untrusted fields, weak text, invalid emails and forged versions without replacing published settings (646.8183ms)
+✔ Upgrading the original schema preserves historical answers, edited questions, sessions and idempotent surveys while adding general questions (1089.2411ms)
+(node:13904) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ Newly invited accounts require a personal password and never expose credentials to the administrator (658.9262ms)
+✔ A temporary session can inspect its session, read public questions and log out, but cannot bypass the access gate (817.3997ms)
+✔ Password changes require a valid session, origin and CSRF token and reject weak, reused or incorrect passwords (1278.6039ms)
+✔ A successful change revokes every old session, rotates the salt, keeps the personal password private and restores scoped access (1915.2399ms)
+✔ A manager with a temporary password also must change it before creating other accounts (960.2113ms)
+✔ Concurrent password changes cannot reuse a revoked temporary session or overwrite the first personal password (1472.5738ms)
+✔ Logging out while a password change is being verified prevents the revoked session from changing credentials (1443.016ms)
+✔ Repeated incorrect current passwords are rate limited without removing the temporary password gate (1257.8767ms)
+✔ Legacy database migration keeps account IDs, hashes and active sessions without forcing an existing account to change its password (307.3157ms)
+✔ Postgres access setup is repeatable, preserves credentials and isolates the backend from public roles (2351.0949ms)
+(node:57808) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ Postgres migration is repeatable, preserves questions, enables RLS and denies anonymous schema access (3710.2687ms)
+✔ Postgres submissions and consent are atomic, idempotent and separated from scoped analytics (3107.4179ms)
+✔ Postgres question and settings updates retain history and reject stale or forbidden writes (2137.9691ms)
+✔ Postgres authentication rotates sessions and supports all five roles without exposing password hashes (2455.4412ms)
+✔ Postgres rate counters are atomic SQL increments and retain only hashed keys (1596.6039ms)
+✔ Postgres transactions keep one checked-out client and roll back before releasing on failure (1.7774ms)
+(node:53636) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ All five roles enforce their own routes and the public wall never returns individual data (1375.2607ms)
+✔ Upgrading two-role SQLite accounts preserves IDs, password hashes, sessions and audit references (308.722ms)
+✔ Client IP ignores spoofable forwarded headers outside the trusted Vercel runtime (1.4699ms)
+(node:60908) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ sqlite: preserva classificação e origem, limita pesquisa setorial e protege reenvios (191.1257ms)
+✔ sqlite: schedule snapshots match only sector/date/shift and remain immutable after edits (188.2752ms)
+✔ sqlite: concurrent schedule writers require the current version and sector managers cannot cross sectors (238.8357ms)
+✔ postgres: preserva classificação e origem, limita pesquisa setorial e protege reenvios (2544.7579ms)
+✔ postgres: schedule snapshots match only sector/date/shift and remain immutable after edits (2186.9525ms)
+✔ postgres: concurrent schedule writers require the current version and sector managers cannot cross sectors (1872.4543ms)
+✔ Schedule HTTP permissions, optimistic conflicts and public submissions reject forged teams and future Brazil dates (1144.3406ms)
+✔ Legacy SQLite survey migration preserves answers, contacts, idempotence and foreign keys (164.8315ms)
+ℹ tests 54
+ℹ suites 0
+ℹ pass 54
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 15558.1991

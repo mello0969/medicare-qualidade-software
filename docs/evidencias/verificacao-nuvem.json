@@ -1,0 +1,28 @@
+{
+  "date": "2026-11-26",
+  "baseCommit": "87e7766",
+  "supabase": "ACTIVE_HEALTHY",
+  "publicChecks": {
+    "/": 200,
+    "/api/docs": 200,
+    "/api/openapi.json": 200,
+    "/api/questions": 200,
+    "/api/wall": 200
+  },
+  "schemaMigration": {
+    "nullableColumnsAdded": ["feedback", "origin", "questionnaire"],
+    "auditReadGrants": "somente created_at e event conforme script versionado",
+    "credentialsChanged": false,
+    "existingRowsDeleted": false
+  },
+  "productionProbe": {
+    "httpStatus": 201,
+    "nps": 0,
+    "metadataPersisted": true,
+    "data": "fictícia, sem contato",
+    "ownRecordRemoved": true,
+    "remainingOwnRecords": 0
+  },
+  "securityAdvisor": "sem lints no instante consultado",
+  "paidResourcesCreated": false
+}

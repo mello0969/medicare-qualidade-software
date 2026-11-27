@@ -48,12 +48,49 @@ Na validação de 26/11/2026 passaram 15 testes de domínio e planilhas, 52 de A
 
 ## Arquivos para acompanhar o código
 
-| Área | Arquivos principais |
-| --- | --- |
-| Navegação e permissões | `src/App.tsx`, `server/app.mjs` |
+| Área                             | Arquivos principais                                                                                     |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Navegação e permissões           | `src/App.tsx`, `server/app.mjs`                                                                         |
 | Coleta, validação e persistência | `src/Survey.tsx`, `src/SurveyLinks.tsx`, `src/validation.ts`, `server/store.mjs`, `server/postgres.mjs` |
-| Filtros, bases e fórmulas | `src/domain.ts`, `src/analytics.ts`, `src/DashboardFilters.tsx` |
-| Painel, relatórios e gráficos | `src/Dashboard.tsx`, `src/DashboardResults.tsx`, `src/dashboard.css` |
-| Planilhas, auditoria e contrato | `src/export.ts`, `server/audit.mjs`, `server/openapi.mjs` |
+| Filtros, bases e fórmulas        | `src/domain.ts`, `src/analytics.ts`, `src/DashboardFilters.tsx`                                         |
+| Painel, relatórios e gráficos    | `src/Dashboard.tsx`, `src/DashboardResults.tsx`, `src/dashboard.css`                                    |
+| Planilhas, auditoria e contrato  | `src/export.ts`, `server/audit.mjs`, `server/openapi.mjs`                                               |
 
 O [manual de operação](entrega/operacao.md) reúne detalhes da pesquisa, perfis e ambiente publicado.
+
+## Entrega integrada das quatro disciplinas
+
+Murilo Mello e Arthur Kaiser · Informática, turma 63-1 · CIMOL.
+
+- [Site](https://fhdod-experiencia-paciente.vercel.app/)
+- [Swagger online](https://fhdod-experiencia-paciente.vercel.app/api/docs) e [OpenAPI JSON](https://fhdod-experiencia-paciente.vercel.app/api/openapi.json)
+- [Kanban público](https://trello.com/b/2VKO9CVI/fhdod-projeto-integrado-murilo-e-arthur)
+- [Mockups](https://www.figma.com/design/c9cfayZtbsHNuJ0vvm874X) e [fluxo](https://www.figma.com/board/ESLs3X7Yu6SID1KcxojZPg)
+- [Índice e checklist integrado](docs/entrega-integrada.md)
+
+| Documento                                                          | Conteúdo                                           |
+| ------------------------------------------------------------------ | -------------------------------------------------- |
+| [Requisitos](docs/requisitos.md)                                   | RF/RNF, atores, critérios e rastreabilidade        |
+| [Arquitetura](docs/arquitetura-backend.md)                         | Camadas, segurança, decisões e limites de escala   |
+| [Git e Kanban](docs/padroes-git.md)                                | Branches, commits, PRs, evidências e metodologia   |
+| [Plano e relatório de testes](docs/plano-e-relatorio-de-testes.md) | Execução atual, cobertura, falhas e limites        |
+| [Modelo de dados](docs/modelo-de-dados-e-requisitos.md)            | Conceitual/lógico, SQL/NoSQL, entidades e relações |
+| [Dicionário](docs/dicionario-de-dados.md)                          | Atributos, tipos e restrições físicas              |
+| [Padrões do banco](docs/padroes-banco-de-dados.md)                 | Nomes, chaves, índices e datas                     |
+| [Persistência e consultas](docs/mapeamento-classes-e-consultas.md) | Adaptadores, transações e queries                  |
+| [Segurança e nuvem](docs/seguranca-e-nuvem.md)                     | Supabase, conexão e acesso privado para avaliação  |
+| [Plano de negócios](docs/plano-de-negocios.md)                     | Monetização, custos, projeções e expansão          |
+| [Projeção financeira CSV](docs/projecao-financeira.csv)            | Cálculo reproduzível com premissas hipotéticas     |
+| [Guia visual](docs/guia-visual.md)                                 | Identidade, personas e interação                   |
+
+As novas evidências estão em `docs/evidencias/`. O Kanban foi criado em 26/11 para a conclusão; não simula uso desde outubro. O PR #1 do Arthur e os commits anteriores são evidências reais e foram preservados. Projeções comerciais são hipóteses acadêmicas, não vendas ou orçamentos confirmados. O Codex apoiou implementação e revisão.
+
+### Configuração, acesso e cobertura
+
+`.env.example` descreve a configuração; não contém a conexão real. `HOST`/`PORT` controlam a API; `APP_ORIGIN` precisa ser a origem exata; `MEDICARE_API_URL` é o proxy local; `MEDICARE_DB_PATH` aponta ao SQLite; `DATABASE_URL` é segredo somente do servidor. `MEDICARE_SECURE_COOKIES=true` em HTTPS; `MEDICARE_DB_CA_PEM`/`FILE` informam a CA quando necessária. Nunca criar `VITE_DATABASE_URL` ou publicar `.env`.
+
+`npm run test:coverage:api` mede as linhas, ramos e funções dos módulos de backend carregados pela suíte Node, excluindo arquivos de teste. Não representa cobertura do frontend ou de todas as linhas do repositório. O relatório registra escopo e valores. Playwright usa banco temporário, não o Supabase real.
+
+O site, Swagger e persistência foram reconferidos em 26/11 após retomar o plano gratuito e aplicar as colunas opcionais pendentes do painel. Não há backup automático, convites reais, integração de prontuário, expurgo ou recuperação de senha por e-mail implementados. Retenção é proposta a validar. Credenciais da banca devem ser transmitidas separadamente por canal privado, nunca anexadas à entrega pública.
+
+Fontes: [enunciado integrado](https://cooing-trouble-f7d.notion.site/Desenvolvimento-de-Solu-o-Web-Corporativa-3e21679f3ac5806697c1e0bcb47debb7), [Sites](https://cooing-trouble-f7d.notion.site/Enunciado-Complementar-Disciplina-de-Cria-o-de-Sites-3e91679f3ac58090809bc88f90c7cef6) e [Banco](https://cooing-trouble-f7d.notion.site/Enunciado-Complementar-Disciplina-de-Banco-de-Dados-3ec1679f3ac580c0a8aff16123beee48). As exigências foram conferidas com as instruções fornecidas pelo estudante; datas atuais devem ser verificadas na atividade correspondente.

@@ -1,0 +1,7 @@
+Evidência de execução local - 26/11/2026 - base 87e7766 + revisão integrada
+
+> medicare-qualidade-software@0.4.0 format:check
+> prettier --check src server scripts tests api package.json tsconfig.json vite.config.ts playwright.config.ts vercel.json index.html
+
+Checking formatting...
+All matched files use Prettier code style!

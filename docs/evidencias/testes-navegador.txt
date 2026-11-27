@@ -1,0 +1,101 @@
+Evidência de execução local - 26/11/2026 - base 87e7766 + revisão integrada
+
+> medicare-qualidade-software@0.4.0 test:e2e
+> playwright test
+
+[WebServer] (node:61576) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:61576) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] .env not found. Continuing without it.
+[WebServer] (node:61800) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 73 tests using 3 workers
+
+(node:58880) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:58616) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:58316) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok  3 [desktop] › tests\accessibility.spec.ts:26:1 › pesquisa utilizável em 320px e com fonte ampliada (3.3s)
+  ok  1 [desktop] › tests\api-docs.spec.ts:5:1 › Swagger carrega sem CDN e executa uma leitura real pela mesma origem (4.5s)
+  ok  4 [desktop] › tests\api-docs.spec.ts:31:1 › Swagger reutiliza o cookie e obtém CSRF ao encerrar a própria sessão (5.4s)
+  ok  2 [desktop] › tests\accessibility.spec.ts:4:1 › formulário e painel atendem à verificação automática de acessibilidade (10.8s)
+  ok  6 [desktop] › tests\connected-accessibility.spec.ts:67:1 › áreas restritas ao setor acessíveis e sem transbordamento (5.5s)
+  ok  5 [desktop] › tests\connected-accessibility.spec.ts:23:1 › login e áreas da gestão acessíveis em computador e celular (10.9s)
+  ok  7 [desktop] › tests\connected-accessibility.spec.ts:97:1 › pedido de contato e confirmação acessíveis em computador e celular (5.0s)
+  ok  8 [desktop] › tests\connected-accessibility.spec.ts:139:1 › definição obrigatória de senha acessível em computador e celular (3.5s)
+  ok 11 [desktop] › tests\dashboard.spec.ts:44:1 › mostra carregamento e falha sem publicar zeros, recuperando após atualizar (2.7s)
+  ok 10 [desktop] › tests\dashboard.spec.ts:4:1 › consulta, compara e exporta os indicadores e abre o detalhe do setor (5.3s)
+  ok 12 [desktop] › tests\dashboard.spec.ts:68:1 › painel conserva os controles em 320 px, tablet e notebook (2.9s)
+  ok 13 [desktop] › tests\flows.spec.ts:5:1 › primeira tela identifica o hospital e separa equipe e paciente (2.4s)
+  ok  9 [desktop] › tests\connected.spec.ts:21:3 › pesquisa compartilhada e administração › pesquisa anônima aparece no painel de outro navegador após login (8.3s)
+  ok 16 [desktop] › tests\connected.spec.ts:46:3 › pesquisa compartilhada e administração › administrador de setor recebe somente seu setor e não administra contas (2.8s)
+  ok 15 [desktop] › tests\flows.spec.ts:43:1 › filtros, vazio, restauração e download Excel (4.2s)
+  ok 14 [desktop] › tests\flows.spec.ts:20:1 › paciente responde, dados persistem e painel usa apenas as respostas locais (4.8s)
+  ok 19 [desktop] › tests\flows.spec.ts:99:1 › edição de perguntas preserva versão e é usada por novas pesquisas (2.7s)
+  ok 18 [desktop] › tests\flows.spec.ts:68:1 › iniciar outra pesquisa não reutiliza a data do atendimento anterior (3.9s)
+  ok 20 [desktop] › tests\flows.spec.ts:114:1 › armazenamento corrompido é informado sem apagar dados (3.8s)
+  ok 21 [desktop] › tests\flows.spec.ts:124:1 › telas sem transbordamento, console limpo e movimento reduzido (3.8s)
+  ok 17 [desktop] › tests\connected.spec.ts:108:3 › pesquisa compartilhada e administração › editar pergunta publica a nova versão sem alterar uma pesquisa já iniciada (8.9s)
+  ok 22 [desktop] › tests\flows.spec.ts:145:1 › perguntas específicas precedem gerais; avaliações são opcionais e NPS é obrigatório (2.8s)
+  ok 25 [desktop] › tests\flows.spec.ts:207:1 › retirar um setor descarta sua nota ruim do contato e da confirmação (3.7s)
+  ok 23 [desktop] › tests\flows.spec.ts:174:1 › nota neutra mantém contato oculto e avaliação ruim permite seguir sem contato (8.1s)
+  ok 26 [desktop] › tests\openapi.spec.ts:2:1 › Swagger UI carrega localmente e executa o endpoint público de saúde (2.3s)
+  ok 24 [desktop] › tests\connected.spec.ts:156:3 › pesquisa compartilhada e administração › admin cria senha temporária e gestor define senha própria antes de acessar o setor (10.0s)
+  ok 27 [desktop] › tests\publication.spec.ts:89:3 › QR Codes, TV Wall e permissões de publicação › TV Wall de exemplo é transparente e não consulta indicadores do servidor (3.1s)
+  ok 30 [desktop] › tests\publication.spec.ts:108:3 › QR Codes, TV Wall e permissões de publicação › TV Wall público reflete pesquisas e publica somente agregados sem contato nem relatos (3.3s)
+  ok 29 [desktop] › tests\connected.spec.ts:222:3 › pesquisa compartilhada e administração › sessão persiste após recarregar e logout remove o acesso ao servidor (5.2s)
+  ok 28 [desktop] › tests\publication.spec.ts:50:3 › QR Codes, TV Wall e permissões de publicação › cada PNG baixado contém o QR Code legível da URL correta do setor (8.1s)
+  ok 31 [desktop] › tests\publication.spec.ts:193:3 › QR Codes, TV Wall e permissões de publicação › falha inicial do TV Wall não apresenta números fictícios (2.1s)
+  ok 33 [desktop] › tests\publication.spec.ts:203:3 › QR Codes, TV Wall e permissões de publicação › falha após atualização preserva os indicadores e sinaliza que estão desatualizados (2.5s)
+  ok 32 [desktop] › tests\connected.spec.ts:236:3 › pesquisa compartilhada e administração › erro de conexão mantém o rascunho e a tentativa seguinte usa o mesmo identificador (3.3s)
+  ok 34 [desktop] › tests\publication.spec.ts:228:5 › QR Codes, TV Wall e permissões de publicação › viewer recebe painel agregado e somente as opções permitidas (4.6s)
+  ok 36 [desktop] › tests\connected.spec.ts:264:3 › pesquisa compartilhada e administração › logout de sessão expirada retorna ao acesso anônimo sem alerta (2.4s)
+  ok 35 [desktop] › tests\publication.spec.ts:228:5 › QR Codes, TV Wall e permissões de publicação › ombudsman recebe painel agregado e somente as opções permitidas (4.3s)
+  ok 37 [desktop] › tests\schedules.spec.ts:24:1 › escala preserva a edição em conflito e exige revisar a versão atual (3.1s)
+  ok 39 [desktop] › tests\schedules.spec.ts:71:1 › Gestão consulta escalas sem controles de edição e sem transbordamento (3.2s)
+  ok 40 [desktop] › tests\schedules.spec.ts:104:1 › Admin de Setor cadastra somente a equipe de seu setor com versão inicial zero (2.8s)
+  ok 38 [desktop] › tests\connected.spec.ts:278:3 › pesquisa compartilhada e administração › pedido opcional da ouvidoria exige autorização e fica separado das respostas analíticas (8.1s)
+  ok 41 [desktop] › tests\connected.spec.ts:343:3 › pesquisa compartilhada e administração › admin publica mensagens personalizadas e novas perguntas gerais (6.6s)
+(node:53896) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:61792) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 43 [mobile] › tests\accessibility.spec.ts:26:1 › pesquisa utilizável em 320px e com fonte ampliada (2.6s)
+(node:57756) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 42 [mobile] › tests\accessibility.spec.ts:4:1 › formulário e painel atendem à verificação automática de acessibilidade (8.4s)
+  ok 45 [mobile] › tests\api-docs.spec.ts:5:1 › Swagger carrega sem CDN e executa uma leitura real pela mesma origem (4.2s)
+  ok 44 [mobile] › tests\api-docs.spec.ts:31:1 › Swagger reutiliza o cookie e obtém CSRF ao encerrar a própria sessão (7.1s)
+  ok 47 [mobile] › tests\connected-accessibility.spec.ts:67:1 › áreas restritas ao setor acessíveis e sem transbordamento (8.9s)
+  ok 48 [mobile] › tests\connected-accessibility.spec.ts:97:1 › pedido de contato e confirmação acessíveis em computador e celular (9.2s)
+  ok 49 [mobile] › tests\connected-accessibility.spec.ts:139:1 › definição obrigatória de senha acessível em computador e celular (6.0s)
+  ok 50 [mobile] › tests\dashboard.spec.ts:4:1 › consulta, compara e exporta os indicadores e abre o detalhe do setor (5.6s)
+  ok 52 [mobile] › tests\dashboard.spec.ts:68:1 › painel conserva os controles em 320 px, tablet e notebook (2.4s)
+  ok 46 [mobile] › tests\connected-accessibility.spec.ts:23:1 › login e áreas da gestão acessíveis em computador e celular (19.4s)
+  ok 51 [mobile] › tests\dashboard.spec.ts:44:1 › mostra carregamento e falha sem publicar zeros, recuperando após atualizar (4.2s)
+  ok 53 [mobile] › tests\flows.spec.ts:5:1 › primeira tela identifica o hospital e separa equipe e paciente (3.7s)
+  ok 55 [mobile] › tests\flows.spec.ts:43:1 › filtros, vazio, restauração e download Excel (5.4s)
+  ok 54 [mobile] › tests\flows.spec.ts:20:1 › paciente responde, dados persistem e painel usa apenas as respostas locais (7.0s)
+  ok 57 [mobile] › tests\flows.spec.ts:99:1 › edição de perguntas preserva versão e é usada por novas pesquisas (2.7s)
+  ok 56 [mobile] › tests\flows.spec.ts:68:1 › iniciar outra pesquisa não reutiliza a data do atendimento anterior (6.0s)
+  ok 59 [mobile] › tests\flows.spec.ts:124:1 › telas sem transbordamento, console limpo e movimento reduzido (3.4s)
+  ok 58 [mobile] › tests\flows.spec.ts:114:1 › armazenamento corrompido é informado sem apagar dados (5.3s)
+  ok 60 [mobile] › tests\flows.spec.ts:145:1 › perguntas específicas precedem gerais; avaliações são opcionais e NPS é obrigatório (4.9s)
+  ok 62 [mobile] › tests\flows.spec.ts:207:1 › retirar um setor descarta sua nota ruim do contato e da confirmação (3.7s)
+  ok 63 [mobile] › tests\openapi.spec.ts:2:1 › Swagger UI carrega localmente e executa o endpoint público de saúde (3.2s)
+  ok 65 [mobile] › tests\publication.spec.ts:89:3 › QR Codes, TV Wall e permissões de publicação › TV Wall de exemplo é transparente e não consulta indicadores do servidor (3.5s)
+  ok 61 [mobile] › tests\flows.spec.ts:174:1 › nota neutra mantém contato oculto e avaliação ruim permite seguir sem contato (10.2s)
+  ok 64 [mobile] › tests\publication.spec.ts:50:3 › QR Codes, TV Wall e permissões de publicação › cada PNG baixado contém o QR Code legível da URL correta do setor (6.3s)
+  ok 66 [mobile] › tests\publication.spec.ts:108:3 › QR Codes, TV Wall e permissões de publicação › TV Wall público reflete pesquisas e publica somente agregados sem contato nem relatos (2.8s)
+  ok 67 [mobile] › tests\publication.spec.ts:203:3 › QR Codes, TV Wall e permissões de publicação › falha após atualização preserva os indicadores e sinaliza que estão desatualizados (2.1s)
+  ok 68 [mobile] › tests\publication.spec.ts:193:3 › QR Codes, TV Wall e permissões de publicação › falha inicial do TV Wall não apresenta números fictícios (2.1s)
+  ok 71 [mobile] › tests\schedules.spec.ts:24:1 › escala preserva a edição em conflito e exige revisar a versão atual (3.1s)
+  ok 70 [mobile] › tests\publication.spec.ts:228:5 › QR Codes, TV Wall e permissões de publicação › ombudsman recebe painel agregado e somente as opções permitidas (4.2s)
+  ok 69 [mobile] › tests\publication.spec.ts:228:5 › QR Codes, TV Wall e permissões de publicação › viewer recebe painel agregado e somente as opções permitidas (4.7s)
+  ok 72 [mobile] › tests\schedules.spec.ts:71:1 › Gestão consulta escalas sem controles de edição e sem transbordamento (2.8s)
+  ok 73 [mobile] › tests\schedules.spec.ts:104:1 › Admin de Setor cadastra somente a equipe de seu setor com versão inicial zero (2.0s)
+
+  73 passed (2.3m)

@@ -1,0 +1,12 @@
+ENTREGA INTEGRADA - FHDOD
+
+Anexar documentacao-tecnica-comercial-integrada.pdf na atividade Desenvolvimento de Solução Web Corporativa, junto com os links abaixo. Não enviar ZIP de código ou credenciais.
+
+GitHub: https://github.com/mello0969/medicare-qualidade-software
+Site: https://fhdod-experiencia-paciente.vercel.app/
+Swagger: https://fhdod-experiencia-paciente.vercel.app/api/docs
+Kanban: https://trello.com/b/2VKO9CVI/fhdod-projeto-integrado-murilo-e-arthur
+Mockups: https://www.figma.com/design/c9cfayZtbsHNuJ0vvm874X
+Fluxo: https://www.figma.com/board/ESLs3X7Yu6SID1KcxojZPg
+
+Confira que a revisão dos documentos foi publicada no GitHub antes de enviar. O agente não realizou a entrega no Classroom. Leia o PDF antes de confirmar. Não anexar .env real, senhas, tokens, banco ou backups privados.
